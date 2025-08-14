@@ -13,6 +13,11 @@ namespace CrystalDefenders.Units
         private IList<Vector3> assignedPath;
         private Coroutine spawningRoutine;
 
+        // Variant spawning (optional)
+        private IList<Enemy> variantPrefabs;
+        private IList<float> variantWeights;
+        private float intervalOverride = -1f;
+
         public void Initialize(IList<Vector3> pathWaypoints)
         {
             assignedPath = pathWaypoints;
@@ -21,6 +26,16 @@ namespace CrystalDefenders.Units
         public void BeginSpawning(int totalToSpawn)
         {
             if (spawningRoutine != null) StopCoroutine(spawningRoutine);
+            variantPrefabs = null; variantWeights = null; intervalOverride = -1f;
+            spawningRoutine = StartCoroutine(SpawnRoutine(totalToSpawn));
+        }
+
+        public void BeginSpawning(int totalToSpawn, IList<Enemy> variants, IList<float> weights = null, float? intervalSeconds = null)
+        {
+            if (spawningRoutine != null) StopCoroutine(spawningRoutine);
+            variantPrefabs = variants;
+            variantWeights = weights;
+            intervalOverride = intervalSeconds.HasValue ? intervalSeconds.Value : -1f;
             spawningRoutine = StartCoroutine(SpawnRoutine(totalToSpawn));
         }
 
@@ -31,16 +46,45 @@ namespace CrystalDefenders.Units
             {
                 SpawnOne();
                 spawned++;
-                yield return new WaitForSeconds(spawnIntervalSeconds);
+                float wait = intervalOverride > 0f ? intervalOverride : spawnIntervalSeconds;
+                yield return new WaitForSeconds(wait);
             }
         }
 
         private void SpawnOne()
         {
-            if (enemyPrefab == null || assignedPath == null || assignedPath.Count == 0) return;
+            if ((enemyPrefab == null && (variantPrefabs == null || variantPrefabs.Count == 0)) || assignedPath == null || assignedPath.Count == 0) return;
             Vector3 spawnPos = transform.position;
-            var enemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+            var prefab = SelectVariant();
+            if (prefab == null) prefab = enemyPrefab;
+            var enemy = Instantiate(prefab, spawnPos, Quaternion.identity);
             enemy.SetPath(assignedPath);
+        }
+
+        private Enemy SelectVariant()
+        {
+            if (variantPrefabs == null || variantPrefabs.Count == 0) return null;
+            if (variantWeights == null || variantWeights.Count != variantPrefabs.Count)
+            {
+                // Uniform random
+                int i = Random.Range(0, variantPrefabs.Count);
+                return variantPrefabs[i];
+            }
+            float total = 0f;
+            for (int i = 0; i < variantWeights.Count; i++) total += Mathf.Max(0f, variantWeights[i]);
+            if (total <= 0f)
+            {
+                int i = Random.Range(0, variantPrefabs.Count);
+                return variantPrefabs[i];
+            }
+            float r = Random.Range(0f, total);
+            float accum = 0f;
+            for (int i = 0; i < variantPrefabs.Count; i++)
+            {
+                accum += Mathf.Max(0f, variantWeights[i]);
+                if (r <= accum) return variantPrefabs[i];
+            }
+            return variantPrefabs[variantPrefabs.Count - 1];
         }
     }
 }

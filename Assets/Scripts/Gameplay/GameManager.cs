@@ -36,6 +36,7 @@ namespace CrystalDefenders.Gameplay
             SpawnTowerAtHub();
             CreateSpawners();
             CreatePlacementNodes();
+            DecoratePathVisuals();
 
             // Start wave system
             WaveManager.Instance.StartNextWave();
@@ -68,6 +69,16 @@ namespace CrystalDefenders.Gameplay
                 spawner.Initialize(paths[i] as IList<Vector3>);
                 spawners.Add(spawner);
                 WaveManager.Instance.RegisterSpawner(spawner);
+            }
+        }
+
+        private void DecoratePathVisuals()
+        {
+            // Invoke any PathTileDecorator in the scene after terrain and spawners exist
+            var decorators = FindObjectsOfType<Generation.PathTileDecorator>();
+            foreach (var deco in decorators)
+            {
+                if (deco != null) deco.DecoratePaths();
             }
         }
 
