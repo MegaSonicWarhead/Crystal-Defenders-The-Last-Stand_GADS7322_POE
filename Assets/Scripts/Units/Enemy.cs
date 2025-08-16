@@ -43,6 +43,14 @@ namespace CrystalDefenders.Units
             waypoints.Clear();
             waypoints.AddRange(worldWaypoints);
             currentWpIndex = 0;
+            
+            // Ensure enemy starts at proper height above the path
+            if (waypoints.Count > 0)
+            {
+                Vector3 startPos = transform.position;
+                startPos.y = waypoints[0].y + 0.05f; // Start above the first waypoint
+                transform.position = startPos;
+            }
         }
 
         private void MoveAlongPath()
@@ -61,7 +69,12 @@ namespace CrystalDefenders.Units
             }
 
             Vector3 dir = to.normalized;
-            transform.position += dir * (moveSpeed * Time.deltaTime);
+            Vector3 newPos = pos + dir * (moveSpeed * Time.deltaTime);
+            
+            // Keep enemy at tile height (slightly above terrain)
+            newPos.y = target.y + 0.05f; // 0.05f above the waypoint height
+            
+            transform.position = newPos;
         }
 
         private void TryAttackTargets()

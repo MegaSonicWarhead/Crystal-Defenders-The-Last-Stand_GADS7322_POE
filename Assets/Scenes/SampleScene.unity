@@ -434,7 +434,16 @@ MonoBehaviour:
   randomizeSeedOnAwake: 1
   minPathCount: 3
   pathWideningRadiusTiles: 0
-  pathFlattenHeight: 0.2
+  pathFlattenHeight: 0.1
+  minPathSeparation: 3
+  smoothPaths: 1
+  pathSmoothingIterations: 3
+  pathSmoothingStrength: 1.2
+  pathSmoothingRadius: 6
+  useAggressiveFlattening: 0
+  flatteningRadius: 0
+  flatteningStrength: 0
+  flatteningIterations: 0
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -589,14 +598,17 @@ MonoBehaviour:
   detailPrefabs:
   - {fileID: 919132149155446097, guid: a2d24963a44e21d40a5202e6a6a13604, type: 3}
   - {fileID: 919132149155446097, guid: 0531be01b234af54499a40fad3be1d65, type: 3}
-  - {fileID: 919132149155446097, guid: 5957b8c352d874643b9a7c17788f34ed, type: 3}
-  - {fileID: 919132149155446097, guid: d555676e28f7c3240bc3332258bd6f7e, type: 3}
   - {fileID: 919132149155446097, guid: 0ecb3585a3cbc0b44a88923002373f85, type: 3}
-  treeCount: 100
-  rockCount: 100
-  detailCount: 100
+  treeCount: 40
+  rockCount: 20
+  detailCount: 10
   propYOffset: 0
   propUniformScaleRange: {x: 1, y: 1.2}
+  minDistanceFromPaths: 2
+  minDistanceBetweenProps: 2
+  minDistanceFromPlacementNodes: 1.5
+  randomizePropRotation: 1
+  useTerrainHeight: 1
   placeTransitions: 1
   transitionsContainer: {fileID: 721182296}
   transitionYawOffset: 0

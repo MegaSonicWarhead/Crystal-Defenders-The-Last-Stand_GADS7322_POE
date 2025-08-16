@@ -9,9 +9,34 @@ namespace CrystalDefenders.Generation
     [DisallowMultipleComponent]
     public class ProceduralTerrainGenerator : MonoBehaviour
     {
-        [Header("Grid Settings")] public int gridWidth = 20; public int gridHeight = 20; public float tileSize = 1f;
-        [Header("Heightmap Noise")] public float noiseScale = 4f; public float elevationScale = 3f; public int seed = 0; public bool randomizeSeedOnAwake = true;
-        [Header("Paths")] public int minPathCount = 3; public int pathWideningRadiusTiles = 0; public float pathFlattenHeight = 0.2f;
+        [Header("Grid Settings")]
+        public int gridWidth = 20;
+        public int gridHeight = 20;
+        public float tileSize = 1f;
+        
+        [Header("Heightmap Noise")]
+        public float noiseScale = 4f;
+        public float elevationScale = 3f;
+        public int seed = 0;
+        public bool randomizeSeedOnAwake = true;
+        
+        [Header("Paths")]
+        public int minPathCount = 3;
+        public int pathWideningRadiusTiles = 2;
+        public float pathFlattenHeight = 0.05f;
+        public float minPathSeparation = 2f;
+        
+        [Header("Path Smoothing")]
+        public bool smoothPaths = true;
+        public int pathSmoothingIterations = 5;
+        public float pathSmoothingStrength = 0.95f;
+        public float pathSmoothingRadius = 3f;
+        
+        [Header("Aggressive Flattening")]
+        public bool useAggressiveFlattening = true;
+        public float flatteningRadius = 2.5f;
+        public float flatteningStrength = 1.0f;
+        public int flatteningIterations = 3;
 
         private float[,] heightMap; // size [gridWidth+1, gridHeight+1] for vertex heights
         private bool[,] isPathTile; // size [gridWidth, gridHeight]
@@ -100,47 +125,102 @@ namespace CrystalDefenders.Generation
             };
 
             var usedStarts = new HashSet<Vector2Int>();
+            var existingPaths = new List<List<Vector2Int>>();
             int pathCount = Mathf.Max(minPathCount, 3);
+            int maxAttempts = 100; // Prevent infinite loops
+
+            Debug.Log($"ProceduralTerrainGenerator: Attempting to generate {pathCount} paths with minimum separation {minPathSeparation}");
 
             for (int i = 0; i < pathCount; i++)
             {
                 Vector2Int start;
-                // Try to pick a unique edge start
-                int guard = 0;
+                List<Vector2Int> path;
+                int attempts = 0;
+                bool pathAccepted = false;
+
+                // Try to generate a path that doesn't overlap with existing ones
                 do
                 {
-                    start = edges[pseudoRandom.Next(edges.Count)]();
-                    guard++;
-                } while (usedStarts.Contains(start) && guard < 50);
-                usedStarts.Add(start);
+                    // Try to pick a unique edge start
+                    int guard = 0;
+                    do
+                    {
+                        start = edges[pseudoRandom.Next(edges.Count)]();
+                        guard++;
+                    } while (usedStarts.Contains(start) && guard < 50);
+                    usedStarts.Add(start);
 
-                List<Vector2Int> path = CarvePathGreedy(start, hubGrid);
-                pathsGrid.Add(path);
+                    path = CarvePathGreedy(start, hubGrid);
+                    
+                    // Check if this path overlaps too much with existing paths
+                    if (!DoesPathOverlap(path, existingPaths))
+                    {
+                        pathAccepted = true;
+                        Debug.Log($"ProceduralTerrainGenerator: Path {i + 1} accepted after {attempts + 1} attempts");
+                    }
+                    else
+                    {
+                        attempts++;
+                        Debug.Log($"ProceduralTerrainGenerator: Path {i + 1} rejected due to overlap, attempt {attempts}");
+                    }
+                } while (!pathAccepted && attempts < maxAttempts);
 
-                // Mark spawn world position for this path
-                spawnWorldPositions.Add(GridToWorldCenter(start));
+                if (pathAccepted)
+                {
+                    pathsGrid.Add(path);
+                    existingPaths.Add(path);
+                    // Mark spawn world position for this path
+                    spawnWorldPositions.Add(GridToWorldCenter(start));
+                }
+                else
+                {
+                    Debug.LogWarning($"ProceduralTerrainGenerator: Failed to generate non-overlapping path {i + 1} after {maxAttempts} attempts");
+                    // Add the path anyway to maintain minimum count
+                    pathsGrid.Add(path);
+                    existingPaths.Add(path);
+                    spawnWorldPositions.Add(GridToWorldCenter(start));
+                }
             }
 
             // Mark path tiles
+            int totalPathTiles = 0;
             foreach (var path in pathsGrid)
             {
+                // Ensure path reaches the hub if it's close
+                if (path.Count > 0)
+                {
+                    var lastTile = path[path.Count - 1];
+                    if (Vector2Int.Distance(lastTile, hubGrid) > 1)
+                    {
+                        // Add hub tile if path doesn't reach it
+                        path.Add(hubGrid);
+                    }
+                }
+                
                 foreach (var c in path)
                 {
-                    if (IsInGrid(c)) isPathTile[c.x, c.y] = true;
+                    if (IsInGrid(c)) 
+                    {
+                        isPathTile[c.x, c.y] = true;
+                        totalPathTiles++;
+                    }
                 }
             }
+            Debug.Log($"ProceduralTerrainGenerator: Generated {pathsGrid.Count} paths with {totalPathTiles} total path tiles");
         }
 
         private List<Vector2Int> CarvePathGreedy(Vector2Int start, Vector2Int goal)
         {
-            // Simple greedy descent toward the hub with small random turns
+            // Improved greedy algorithm with better pathfinding and shorter routes
             var current = start;
             var visited = new HashSet<Vector2Int>();
             var path = new List<Vector2Int> { current };
             visited.Add(current);
 
-            int safety = gridWidth * gridHeight * 4;
-            while (current != goal && safety-- > 0)
+            int maxPathLength = Mathf.Max(gridWidth, gridHeight) * 2; // Limit path length
+            int safety = maxPathLength * 2;
+            
+            while (current != goal && safety-- > 0 && path.Count < maxPathLength)
             {
                 Vector2Int bestNext = current;
                 float bestScore = float.MaxValue;
@@ -150,10 +230,19 @@ namespace CrystalDefenders.Generation
                     var next = current + dir;
                     if (!IsInGrid(next) || visited.Contains(next)) continue;
 
+                    // Prioritize direct movement toward goal
                     float manhattan = Mathf.Abs(next.x - goal.x) + Mathf.Abs(next.y - goal.y);
                     float slopePenalty = GetSlopePenalty(current, next);
-                    float randomJitter = (float)pseudoRandom.NextDouble() * 0.25f; // small variety
-                    float score = manhattan + slopePenalty + randomJitter;
+                    
+                    // Reduce random jitter for more direct paths
+                    float randomJitter = (float)pseudoRandom.NextDouble() * 0.1f;
+                    
+                    // Reduce path separation penalty to allow shorter routes
+                    float pathSeparationPenalty = GetPathSeparationPenalty(next) * 0.5f;
+                    
+                    // Weight manhattan distance more heavily for shorter paths
+                    float score = manhattan * 2f + slopePenalty + randomJitter + pathSeparationPenalty;
+                    
                     if (score < bestScore)
                     {
                         bestScore = score;
@@ -163,23 +252,78 @@ namespace CrystalDefenders.Generation
 
                 if (bestNext == current)
                 {
-                    // Dead-end: try a random neighbor to break ties
+                    // If stuck, try to find any valid neighbor
                     var candidates = new List<Vector2Int>();
                     foreach (var dir in Neighbors4())
                     {
                         var next = current + dir;
-                        if (IsInGrid(next) && !visited.Contains(next)) candidates.Add(next);
+                        if (IsInGrid(next) && !visited.Contains(next)) 
+                        {
+                            candidates.Add(next);
+                        }
                     }
-                    if (candidates.Count == 0) break;
-                    bestNext = candidates[pseudoRandom.Next(candidates.Count)];
+                    
+                    if (candidates.Count > 0)
+                    {
+                        // Prefer neighbors closer to the goal
+                        candidates.Sort((a, b) => 
+                        {
+                            float distA = Vector2Int.Distance(a, goal);
+                            float distB = Vector2Int.Distance(b, goal);
+                            return distA.CompareTo(distB);
+                        });
+                        bestNext = candidates[0];
+                    }
+                    else
+                    {
+                        break; // No valid neighbors, stop here
+                    }
                 }
 
                 current = bestNext;
                 path.Add(current);
                 visited.Add(current);
+                
+                // Early exit if we're very close to the goal
+                if (Vector2Int.Distance(current, goal) <= 1)
+                {
+                    break;
+                }
+            }
+
+            // Ensure the path reaches the goal if possible
+            if (path.Count > 0 && Vector2Int.Distance(path[path.Count - 1], goal) > 1)
+            {
+                path.Add(goal);
             }
 
             return path;
+        }
+
+        private float GetPathSeparationPenalty(Vector2Int tile)
+        {
+            // Check if this tile is too close to existing paths
+            float minDistance = float.MaxValue;
+            
+            foreach (var existingPath in pathsGrid)
+            {
+                foreach (var existingTile in existingPath)
+                {
+                    float distance = Vector2Int.Distance(tile, existingTile);
+                    if (distance < minDistance)
+                    {
+                        minDistance = distance;
+                    }
+                }
+            }
+            
+            // If too close to existing paths, add a penalty
+            if (minDistance < minPathSeparation)
+            {
+                return (minPathSeparation - minDistance) * 3f; // Reduced penalty for shorter paths
+            }
+            
+            return 0f; // No penalty if far enough from existing paths
         }
 
         private float GetSlopePenalty(Vector2Int a, Vector2Int b)
@@ -193,25 +337,13 @@ namespace CrystalDefenders.Generation
 
         private void ApplyPathFlatteningAndWidening()
         {
-            // Lower the vertex heights near path tiles for visual clarity
-            for (int y = 0; y <= gridHeight; y++)
-            {
-                for (int x = 0; x <= gridWidth; x++)
-                {
-                    // Determine the nearest tile index to this vertex
-                    int tx = Mathf.Clamp(x, 0, gridWidth - 1);
-                    int ty = Mathf.Clamp(y, 0, gridHeight - 1);
-                    if (IsNearPath(new Vector2Int(tx, ty), pathWideningRadiusTiles))
-                    {
-                        heightMap[x, y] = Mathf.Min(heightMap[x, y], pathFlattenHeight);
-                    }
-                }
-            }
-
-            // Also widen the path flags
+            Debug.Log($"ProceduralTerrainGenerator: Starting path processing - {pathsGrid.Count} paths, {pathWideningRadiusTiles} widening radius");
+            
+            // First, widen the path flags
             if (pathWideningRadiusTiles > 0)
             {
                 var widened = new bool[gridWidth, gridHeight];
+                int widenedCount = 0;
                 for (int y = 0; y < gridHeight; y++)
                 {
                     for (int x = 0; x < gridWidth; x++)
@@ -219,11 +351,270 @@ namespace CrystalDefenders.Generation
                         if (isPathTile[x, y] || IsNearPath(new Vector2Int(x, y), pathWideningRadiusTiles))
                         {
                             widened[x, y] = true;
+                            widenedCount++;
                         }
                     }
                 }
                 isPathTile = widened;
+                Debug.Log($"ProceduralTerrainGenerator: Widened paths to {widenedCount} tiles");
             }
+
+            // Apply progressive path flattening with smooth transitions
+            ApplyProgressivePathFlattening();
+            
+            // Apply path smoothing if enabled
+            if (smoothPaths)
+            {
+                ApplyPathSmoothing();
+            }
+            
+            // Final terrain leveling pass for completely flat paths
+            if (useAggressiveFlattening)
+            {
+                ApplyFinalTerrainLeveling();
+            }
+            
+            Debug.Log($"ProceduralTerrainGenerator: Path processing complete");
+        }
+
+        private void ApplyProgressivePathFlattening()
+        {
+            Debug.Log($"ProceduralTerrainGenerator: Starting aggressive landscape painting flattening");
+            
+            if (useAggressiveFlattening)
+            {
+                ApplyAggressiveLandscapeFlattening();
+            }
+            else
+            {
+                ApplyStandardPathFlattening();
+            }
+        }
+        
+        private void ApplyAggressiveLandscapeFlattening()
+        {
+            // Create a completely flat surface for paths using multiple iterations
+            for (int iteration = 0; iteration < flatteningIterations; iteration++)
+            {
+                var tempHeightMap = new float[gridWidth + 1, gridHeight + 1];
+                Array.Copy(heightMap, tempHeightMap, heightMap.Length);
+                
+                int flattenedVertices = 0;
+                
+                // Apply aggressive flattening to all vertices near paths
+                for (int y = 0; y <= gridHeight; y++)
+                {
+                    for (int x = 0; x <= gridWidth; x++)
+                    {
+                        int tx = Mathf.Clamp(x, 0, gridWidth - 1);
+                        int ty = Mathf.Clamp(y, 0, gridHeight - 1);
+                        
+                        float distanceToPath = GetDistanceToPathCenter(new Vector2Int(tx, ty));
+                        
+                        if (distanceToPath <= flatteningRadius)
+                        {
+                            // Use a more aggressive falloff curve for complete flattening
+                            float normalizedDistance = distanceToPath / flatteningRadius;
+                            float flattenStrength = Mathf.Pow(1f - normalizedDistance, 2f); // Quadratic falloff
+                            
+                            // Completely flatten the path center, gradual transition to terrain
+                            float targetHeight = Mathf.Lerp(pathFlattenHeight, heightMap[x, y], 1f - flattenStrength);
+                            
+                            // Apply the flattening with full strength
+                            tempHeightMap[x, y] = Mathf.Lerp(heightMap[x, y], targetHeight, flattenStrength * flatteningStrength);
+                            flattenedVertices++;
+                        }
+                    }
+                }
+                
+                heightMap = tempHeightMap;
+                Debug.Log($"ProceduralTerrainGenerator: Aggressive flattening iteration {iteration + 1}: flattened {flattenedVertices} vertices");
+            }
+        }
+        
+        private void ApplyStandardPathFlattening()
+        {
+            Debug.Log($"ProceduralTerrainGenerator: Starting standard path flattening");
+            
+            // Create a temporary heightmap for smooth blending
+            var tempHeightMap = new float[gridWidth + 1, gridHeight + 1];
+            Array.Copy(heightMap, tempHeightMap, heightMap.Length);
+            
+            int flattenedVertices = 0;
+            // Apply progressive flattening with smooth falloff
+            for (int y = 0; y <= gridHeight; y++)
+            {
+                for (int x = 0; x <= gridWidth; x++)
+                {
+                    // Determine the nearest tile index to this vertex
+                    int tx = Mathf.Clamp(x, 0, gridWidth - 1);
+                    int ty = Mathf.Clamp(y, 0, gridHeight - 1);
+                    
+                    float distanceToPath = GetDistanceToPathCenter(new Vector2Int(tx, ty));
+                    if (distanceToPath <= pathWideningRadiusTiles + 1)
+                    {
+                        // Calculate flattening strength based on distance
+                        float flattenStrength = Mathf.SmoothStep(1f, 0f, distanceToPath / (pathWideningRadiusTiles + 1f));
+                        
+                        // Target height: blend between current height and flat path height
+                        float targetHeight = Mathf.Lerp(pathFlattenHeight, heightMap[x, y], 1f - flattenStrength);
+                        
+                        // Apply smooth transition
+                        tempHeightMap[x, y] = Mathf.Lerp(heightMap[x, y], targetHeight, flattenStrength * 0.8f);
+                        flattenedVertices++;
+                    }
+                }
+            }
+            
+            // Apply the smoothed heightmap
+            heightMap = tempHeightMap;
+            Debug.Log($"ProceduralTerrainGenerator: Standard flattening: flattened {flattenedVertices} vertices");
+        }
+        
+        private void ApplyPathSmoothing()
+        {
+            Debug.Log($"ProceduralTerrainGenerator: Starting aggressive path smoothing with {pathSmoothingIterations} iterations");
+            
+            // Apply multiple iterations of height smoothing around paths
+            for (int iteration = 0; iteration < pathSmoothingIterations; iteration++)
+            {
+                var smoothedHeightMap = new float[gridWidth + 1, gridHeight + 1];
+                Array.Copy(heightMap, smoothedHeightMap, heightMap.Length);
+                
+                int smoothedVertices = 0;
+                
+                for (int y = 0; y <= gridHeight; y++)
+                {
+                    for (int x = 0; x <= gridWidth; x++)
+                    {
+                        int tx = Mathf.Clamp(x, 0, gridWidth - 1);
+                        int ty = Mathf.Clamp(y, 0, gridHeight - 1);
+                        
+                        if (IsNearPath(new Vector2Int(tx, ty), Mathf.RoundToInt(pathSmoothingRadius)))
+                        {
+                            // Use a larger smoothing kernel for more aggressive smoothing
+                            float totalWeight = 0f;
+                            float weightedSum = 0f;
+                            
+                            // Extended smoothing kernel (3x3 instead of just immediate neighbors)
+                            for (int dy = -2; dy <= 2; dy++)
+                            {
+                                for (int dx = -2; dx <= 2; dx++)
+                                {
+                                    int nx = x + dx;
+                                    int ny = y + dy;
+                                    
+                                    if (nx >= 0 && ny >= 0 && nx <= gridWidth && ny <= gridHeight)
+                                    {
+                                        // Use distance-based weights for smoother transitions
+                                        float distance = Mathf.Sqrt(dx * dx + dy * dy);
+                                        float weight = Mathf.Exp(-distance * 0.5f); // Exponential falloff
+                                        
+                                        weightedSum += heightMap[nx, ny] * weight;
+                                        totalWeight += weight;
+                                    }
+                                }
+                            }
+                            
+                            if (totalWeight > 0)
+                            {
+                                float smoothedHeight = weightedSum / totalWeight;
+                                
+                                // More aggressive smoothing in early iterations
+                                float iterationStrength = 1f - (iteration / (float)pathSmoothingIterations);
+                                float blendFactor = pathSmoothingStrength * iterationStrength;
+                                
+                                // Apply stronger smoothing near path centers
+                                float distanceToPath = GetDistanceToPathCenter(new Vector2Int(tx, ty));
+                                float pathProximity = Mathf.Max(0f, 1f - distanceToPath / pathSmoothingRadius);
+                                blendFactor *= (0.5f + 0.5f * pathProximity);
+                                
+                                smoothedHeightMap[x, y] = Mathf.Lerp(heightMap[x, y], smoothedHeight, blendFactor);
+                                smoothedVertices++;
+                            }
+                        }
+                    }
+                }
+                
+                heightMap = smoothedHeightMap;
+                Debug.Log($"ProceduralTerrainGenerator: Smoothing iteration {iteration + 1}: smoothed {smoothedVertices} vertices");
+            }
+        }
+        
+        private void ApplyFinalTerrainLeveling()
+        {
+            Debug.Log("ProceduralTerrainGenerator: Applying final terrain leveling for completely flat paths");
+            
+            var leveledHeightMap = new float[gridWidth + 1, gridHeight + 1];
+            Array.Copy(heightMap, leveledHeightMap, heightMap.Length);
+            
+            int leveledVertices = 0;
+            
+            // Create a completely flat surface for path centers
+            for (int y = 0; y <= gridHeight; y++)
+            {
+                for (int x = 0; x <= gridWidth; x++)
+                {
+                    int tx = Mathf.Clamp(x, 0, gridWidth - 1);
+                    int ty = Mathf.Clamp(y, 0, gridHeight - 1);
+                    
+                    float distanceToPath = GetDistanceToPathCenter(new Vector2Int(tx, ty));
+                    
+                    if (distanceToPath <= 1.0f) // Directly on or adjacent to paths
+                    {
+                        // Force completely flat surface for path centers
+                        leveledHeightMap[x, y] = pathFlattenHeight;
+                        leveledVertices++;
+                    }
+                    else if (distanceToPath <= flatteningRadius)
+                    {
+                        // Smooth transition from flat to terrain
+                        float transition = (distanceToPath - 1.0f) / (flatteningRadius - 1.0f);
+                        float targetHeight = Mathf.Lerp(pathFlattenHeight, heightMap[x, y], transition);
+                        
+                        // Use a smooth curve for the transition
+                        float smoothTransition = Mathf.SmoothStep(0f, 1f, transition);
+                        leveledHeightMap[x, y] = Mathf.Lerp(pathFlattenHeight, targetHeight, smoothTransition);
+                        leveledVertices++;
+                    }
+                }
+            }
+            
+            heightMap = leveledHeightMap;
+            Debug.Log($"ProceduralTerrainGenerator: Final leveling: processed {leveledVertices} vertices");
+        }
+        
+        private float GetDistanceToPathCenter(Vector2Int tile)
+        {
+            if (isPathTile[tile.x, tile.y]) return 0f;
+            
+            // Use a more efficient distance calculation with early exit
+            float minDistance = float.MaxValue;
+            int searchRadius = Mathf.Max(pathWideningRadiusTiles + 2, 5); // Limit search area
+            
+            int startX = Mathf.Max(0, tile.x - searchRadius);
+            int endX = Mathf.Min(gridWidth - 1, tile.x + searchRadius);
+            int startY = Mathf.Max(0, tile.y - searchRadius);
+            int endY = Mathf.Min(gridHeight - 1, tile.y + searchRadius);
+            
+            for (int y = startY; y <= endY; y++)
+            {
+                for (int x = startX; x <= endX; x++)
+                {
+                    if (isPathTile[x, y])
+                    {
+                        float distance = Vector2Int.Distance(tile, new Vector2Int(x, y));
+                        if (distance < minDistance)
+                        {
+                            minDistance = distance;
+                            // Early exit if we're very close to a path
+                            if (distance <= 1f) return distance;
+                        }
+                    }
+                }
+            }
+            
+            return minDistance;
         }
 
         private bool IsNearPath(Vector2Int tile, int radius)
@@ -233,7 +624,8 @@ namespace CrystalDefenders.Generation
             {
                 for (int dx = -radius; dx <= radius; dx++)
                 {
-                    int nx = tile.x + dx; int ny = tile.y + dy;
+                    int nx = tile.x + dx;
+                    int ny = tile.y + dy;
                     if (nx < 0 || ny < 0 || nx >= gridWidth || ny >= gridHeight) continue;
                     if (isPathTile[nx, ny]) return true;
                 }
@@ -250,9 +642,8 @@ namespace CrystalDefenders.Generation
             int vertexCount = vxCountX * vxCountY;
             var vertices = new Vector3[vertexCount];
             var uvs = new Vector2[vertexCount];
-            var normals = new Vector3[vertexCount];
 
-            int ti = 0;
+            // Generate vertices and UVs
             for (int y = 0; y < vxCountY; y++)
             {
                 for (int x = 0; x < vxCountX; x++)
@@ -263,10 +654,10 @@ namespace CrystalDefenders.Generation
                     float wy = heightMap[x, y];
                     vertices[i] = new Vector3(wx, wy, wz);
                     uvs[i] = new Vector2(x / (float)gridWidth, y / (float)gridHeight);
-                    normals[i] = Vector3.up;
                 }
             }
 
+            // Generate triangles
             int quadCount = gridWidth * gridHeight;
             var triangles = new int[quadCount * 6];
             int t = 0;
@@ -289,8 +680,11 @@ namespace CrystalDefenders.Generation
             mesh.vertices = vertices;
             mesh.uv = uvs;
             mesh.triangles = triangles;
-            mesh.normals = normals;
+            
+            // Calculate proper normals for smooth shading
+            mesh.RecalculateNormals();
             mesh.RecalculateBounds();
+            mesh.RecalculateTangents();
 
             var filter = GetComponent<MeshFilter>();
             filter.sharedMesh = mesh;
@@ -359,7 +753,7 @@ namespace CrystalDefenders.Generation
             return best;
         }
 
-        private Vector3 GridToWorldCenter(Vector2Int c)
+        public Vector3 GridToWorldCenter(Vector2Int c)
         {
             float wx = (c.x + 0.5f) * tileSize;
             float wz = (c.y + 0.5f) * tileSize;
@@ -374,10 +768,35 @@ namespace CrystalDefenders.Generation
 
         private static IEnumerable<Vector2Int> Neighbors4()
         {
-            yield return Vector2Int.right; yield return Vector2Int.left; yield return Vector2Int.up; yield return Vector2Int.down;
+            yield return Vector2Int.right;
+            yield return Vector2Int.left;
+            yield return Vector2Int.up;
+            yield return Vector2Int.down;
         }
 
         private bool IsInGrid(Vector2Int c) => c.x >= 0 && c.y >= 0 && c.x < gridWidth && c.y < gridHeight;
+
+        private bool DoesPathOverlap(List<Vector2Int> newPath, List<List<Vector2Int>> existingPaths)
+        {
+            if (existingPaths.Count == 0) return false;
+
+            // Check each tile in the new path against existing paths
+            foreach (var tile in newPath)
+            {
+                foreach (var existingPath in existingPaths)
+                {
+                    foreach (var existingTile in existingPath)
+                    {
+                        float distance = Vector2Int.Distance(tile, existingTile);
+                        if (distance < minPathSeparation)
+                        {
+                            return true; // Paths overlap
+                        }
+                    }
+                }
+            }
+            return false;
+        }
 
         private void Shuffle<T>(IList<T> list)
         {
