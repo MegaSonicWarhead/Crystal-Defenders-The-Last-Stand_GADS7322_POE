@@ -356,10 +356,16 @@ namespace CrystalDefenders.Generation
                 return;
             }
 
-            // Place props with collision avoidance
-            PlacePropsWithCollisionAvoidance(availablePositions, treePrefabs, treeCount, parent, "Tree");
-            PlacePropsWithCollisionAvoidance(availablePositions, rockPrefabs, rockCount, parent, "Rock");
-            PlacePropsWithCollisionAvoidance(availablePositions, detailPrefabs, detailCount, parent, "Detail");
+            // Track all placed positions across all prop types to prevent overlaps
+            var allPlacedPositions = new List<Vector3>();
+            
+            // Pre-populate with existing placement node positions to avoid conflicts
+            PopulateExistingPlacementPositions(allPlacedPositions);
+
+            // Place props with collision avoidance, sharing the placed positions list
+            PlacePropsWithCollisionAvoidance(availablePositions, treePrefabs, treeCount, parent, "Tree", allPlacedPositions);
+            PlacePropsWithCollisionAvoidance(availablePositions, rockPrefabs, rockCount, parent, "Rock", allPlacedPositions);
+            PlacePropsWithCollisionAvoidance(availablePositions, detailPrefabs, detailCount, parent, "Detail", allPlacedPositions);
         }
 
         private List<Vector3> GetAvailablePropPositions()
@@ -410,10 +416,22 @@ namespace CrystalDefenders.Generation
 
         private bool IsNearPlacementNode(int x, int y)
         {
-            // Check if this area is near where placement nodes would be
+            // Check if this area is near actual placement nodes in the scene
             var worldPos = generator.GridToWorldCenter(new Vector2Int(x, y));
             
-            // If too close to paths, it's near placement nodes
+            // First check actual placement nodes in the scene
+            var placementNodes = FindObjectsOfType<Gameplay.PlacementNode>();
+            foreach (var node in placementNodes)
+            {
+                if (node == null) continue;
+                float distance = Vector3.Distance(worldPos, node.transform.position);
+                if (distance < minDistanceFromPlacementNodes)
+                {
+                    return true;
+                }
+            }
+            
+            // Also check if too close to paths (as backup)
             var paths = generator.PathWaypoints;
             foreach (var path in paths)
             {
@@ -449,12 +467,11 @@ namespace CrystalDefenders.Generation
             return false;
         }
 
-        private void PlacePropsWithCollisionAvoidance(List<Vector3> availablePositions, GameObject[] prefabSet, int count, Transform parent, string propType)
+        private void PlacePropsWithCollisionAvoidance(List<Vector3> availablePositions, GameObject[] prefabSet, int count, Transform parent, string propType, List<Vector3> allPlacedPositions)
         {
             if (prefabSet == null || prefabSet.Length == 0 || count <= 0 || availablePositions.Count == 0) return;
 
             var positions = new List<Vector3>(availablePositions); // Copy to avoid modifying original
-            var placedPositions = new List<Vector3>(); // Track where we've placed props
             int placed = 0;
             int maxAttempts = count * 10; // Prevent infinite loops
             int attempts = 0;
@@ -469,8 +486,8 @@ namespace CrystalDefenders.Generation
                 int randomIndex = Random.Range(0, positions.Count);
                 var pos = positions[randomIndex];
                 
-                // Check if this position is far enough from already placed props
-                if (IsPositionValidForProp(pos, placedPositions))
+                // Check if this position is far enough from already placed props AND placement nodes
+                if (IsPositionValidForProp(pos, allPlacedPositions))
                 {
                     var prefab = prefabSet[Random.Range(0, prefabSet.Length)];
                     if (prefab == null) continue;
@@ -508,7 +525,8 @@ namespace CrystalDefenders.Generation
                     // Name the prop for easy identification
                     go.name = $"{propType}_{placed + 1}";
                     
-                    placedPositions.Add(pos);
+                    // Add to the shared list to prevent future overlaps
+                    allPlacedPositions.Add(pos);
                     placed++;
                     
                     Debug.Log($"PathTileDecorator: Placed {propType} at {finalPos}");
@@ -523,6 +541,7 @@ namespace CrystalDefenders.Generation
 
         private bool IsPositionValidForProp(Vector3 position, List<Vector3> existingProps)
         {
+            // Check against existing props
             foreach (var existingPos in existingProps)
             {
                 float distance = Vector3.Distance(position, existingPos);
@@ -531,7 +550,33 @@ namespace CrystalDefenders.Generation
                     return false; // Too close to existing prop
                 }
             }
+            
+            // Also check against actual placement nodes in the scene
+            var placementNodes = FindObjectsOfType<Gameplay.PlacementNode>();
+            foreach (var node in placementNodes)
+            {
+                if (node == null) continue;
+                float distance = Vector3.Distance(position, node.transform.position);
+                if (distance < minDistanceBetweenProps)
+                {
+                    return false; // Too close to placement node
+                }
+            }
+            
             return true;
+        }
+
+        private void PopulateExistingPlacementPositions(List<Vector3> placedPositions)
+        {
+            // Add existing placement node positions to the collision list
+            var placementNodes = FindObjectsOfType<Gameplay.PlacementNode>();
+            foreach (var node in placementNodes)
+            {
+                if (node == null) continue;
+                placedPositions.Add(node.transform.position);
+            }
+            
+            Debug.Log($"PathTileDecorator: Pre-populated {placementNodes.Length} placement node positions for collision avoidance");
         }
 
 		private void OnValidate()
