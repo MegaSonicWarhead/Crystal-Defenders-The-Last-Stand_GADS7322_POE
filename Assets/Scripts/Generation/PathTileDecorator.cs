@@ -267,23 +267,23 @@ namespace CrystalDefenders.Generation
             Debug.Log($"PathTileDecorator: Successfully placed {tilesPlaced} path tiles");
 
 			// Transition edge tiles
-			if (placeTransitions && transitionTilePrefab != null)
-			{
-				Transform tParent = transitionsContainer != null ? transitionsContainer : parent;
-				foreach (var key in gridKeys)
-				{
-					var world = keyToWorld[key];
-					var basePos = new Vector3(world.x, world.y + transitionYOffset, world.z);
-					bool n = gridKeys.Contains(new Vector2Int(key.x, key.y + 1));
-					bool s = gridKeys.Contains(new Vector2Int(key.x, key.y - 1));
-					bool e = gridKeys.Contains(new Vector2Int(key.x + 1, key.y));
-					bool w = gridKeys.Contains(new Vector2Int(key.x - 1, key.y));
-					if (!n) Instantiate(transitionTilePrefab, basePos, Quaternion.Euler(0f, 0f + transitionYawOffset, 0f), tParent);
-					if (!e) Instantiate(transitionTilePrefab, basePos, Quaternion.Euler(0f, 90f + transitionYawOffset, 0f), tParent);
-					if (!s) Instantiate(transitionTilePrefab, basePos, Quaternion.Euler(0f, 180f + transitionYawOffset, 0f), tParent);
-					if (!w) Instantiate(transitionTilePrefab, basePos, Quaternion.Euler(0f, 270f + transitionYawOffset, 0f), tParent);
-				}
-			}
+			//if (placeTransitions && transitionTilePrefab != null)
+			//{
+			//	Transform tParent = transitionsContainer != null ? transitionsContainer : parent;
+			//	foreach (var key in gridKeys)
+			//	{
+			//		var world = keyToWorld[key];
+			//		var basePos = new Vector3(world.x, world.y + transitionYOffset, world.z);
+			//		bool n = gridKeys.Contains(new Vector2Int(key.x, key.y + 1));
+			//		bool s = gridKeys.Contains(new Vector2Int(key.x, key.y - 1));
+			//		bool e = gridKeys.Contains(new Vector2Int(key.x + 1, key.y));
+			//		bool w = gridKeys.Contains(new Vector2Int(key.x - 1, key.y));
+			//		if (!n) Instantiate(transitionTilePrefab, basePos, Quaternion.Euler(0f, 0f + transitionYawOffset, 0f), tParent);
+			//		if (!e) Instantiate(transitionTilePrefab, basePos, Quaternion.Euler(0f, 90f + transitionYawOffset, 0f), tParent);
+			//		if (!s) Instantiate(transitionTilePrefab, basePos, Quaternion.Euler(0f, 180f + transitionYawOffset, 0f), tParent);
+			//		if (!w) Instantiate(transitionTilePrefab, basePos, Quaternion.Euler(0f, 270f + transitionYawOffset, 0f), tParent);
+			//	}
+			//}
 
 			            // Spawn markers
             if (spawnTilePrefab != null)

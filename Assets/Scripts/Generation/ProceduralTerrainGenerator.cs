@@ -24,7 +24,7 @@ namespace CrystalDefenders.Generation
         public int minPathCount = 3;
         public int pathWideningRadiusTiles = 2;
         public float pathFlattenHeight = 0.05f;
-        public float minPathSeparation = 2f;
+        public float minPathSeparation = 1f;
         
         [Header("Path Smoothing")]
         public bool smoothPaths = true;
@@ -62,7 +62,7 @@ namespace CrystalDefenders.Generation
 
         private void Start()
         {
-            GenerateTerrainAndPaths();
+           // GenerateTerrainAndPaths();
         }
 
         public void GenerateTerrainAndPaths()
@@ -117,12 +117,12 @@ namespace CrystalDefenders.Generation
         {
             // Select distinct edges and start points
             var edges = new List<Func<Vector2Int>>
-            {
-                () => new Vector2Int(0, pseudoRandom.Next(0, gridHeight)),
-                () => new Vector2Int(gridWidth - 1, pseudoRandom.Next(0, gridHeight)),
-                () => new Vector2Int(pseudoRandom.Next(0, gridWidth), 0),
-                () => new Vector2Int(pseudoRandom.Next(0, gridWidth), gridHeight - 1)
-            };
+    {
+        () => new Vector2Int(0, pseudoRandom.Next(0, gridHeight)),
+        () => new Vector2Int(gridWidth - 1, pseudoRandom.Next(0, gridHeight)),
+        () => new Vector2Int(pseudoRandom.Next(0, gridWidth), 0),
+        () => new Vector2Int(pseudoRandom.Next(0, gridWidth), gridHeight - 1)
+    };
 
             var usedStarts = new HashSet<Vector2Int>();
             var existingPaths = new List<List<Vector2Int>>();
@@ -151,7 +151,7 @@ namespace CrystalDefenders.Generation
                     usedStarts.Add(start);
 
                     path = CarvePathGreedy(start, hubGrid);
-                    
+
                     // Check if this path overlaps too much with existing paths
                     if (!DoesPathOverlap(path, existingPaths))
                     {
@@ -160,6 +160,12 @@ namespace CrystalDefenders.Generation
                     }
                     else
                     {
+                        Debug.Log("What");
+                        Debug.Log("GridofTheHub: " + hubGrid);
+                        for (int t = 0; t < existingPaths[0].Count; t++)
+                        {
+                            Debug.Log("Existing Tile: " + existingPaths[0][t]);
+                        }
                         attempts++;
                         Debug.Log($"ProceduralTerrainGenerator: Path {i + 1} rejected due to overlap, attempt {attempts}");
                     }
@@ -196,10 +202,10 @@ namespace CrystalDefenders.Generation
                         path.Add(hubGrid);
                     }
                 }
-                
+
                 foreach (var c in path)
                 {
-                    if (IsInGrid(c)) 
+                    if (IsInGrid(c))
                     {
                         isPathTile[c.x, c.y] = true;
                         totalPathTiles++;
