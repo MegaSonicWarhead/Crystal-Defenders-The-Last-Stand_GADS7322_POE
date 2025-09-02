@@ -52,32 +52,32 @@ namespace CrystalDefenders.Generation
             if (generator == null) return;
             if (hasDecorated && !clearOld) return;
 
-            Debug.Log("PathTileDecorator: Starting decoration process...");
+           // Debug.Log("PathTileDecorator: Starting decoration process...");
             
             // Ensure terrain and paths are generated before decorating
             var paths = generator.PathWaypoints;
             if (paths == null || paths.Count == 0)
             {
-                Debug.LogWarning("PathTileDecorator: No paths found, generating terrain...");
+                //Debug.LogWarning("PathTileDecorator: No paths found, generating terrain...");
                 generator.GenerateTerrainAndPaths();
                 paths = generator.PathWaypoints;
             }
             
             if (paths == null || paths.Count == 0)
             {
-                Debug.LogError("PathTileDecorator: Still no paths after generation!");
+                //Debug.LogError("PathTileDecorator: Still no paths after generation!");
                 return;
             }
             
-            Debug.Log($"PathTileDecorator: Found {paths.Count} paths with {paths.Sum(p => p.Count)} total waypoints");
+            //Debug.Log($"PathTileDecorator: Found {paths.Count} paths with {paths.Sum(p => p.Count)} total waypoints");
             
             // Debug: Check if we have the required prefabs
             if (straightTilePrefab == null)
             {
-                Debug.LogError("PathTileDecorator: straightTilePrefab is null!");
+                //Debug.LogError("PathTileDecorator: straightTilePrefab is null!");
                 return;
             }
-            Debug.Log($"PathTileDecorator: straightTilePrefab is assigned: {straightTilePrefab.name}");
+            //Debug.Log($"PathTileDecorator: straightTilePrefab is assigned: {straightTilePrefab.name}");
 
 			Transform parent = container != null ? container : transform;
 			if (clearOld)
@@ -113,12 +113,12 @@ namespace CrystalDefenders.Generation
 			if (paths != null)
 			{
 				float size = Mathf.Max(0.0001f, generator.tileSize);
-				Debug.Log($"PathTileDecorator: Processing paths with tile size {size}");
+				//Debug.Log($"PathTileDecorator: Processing paths with tile size {size}");
 				
 				for (int pIndex = 0; pIndex < paths.Count; pIndex++)
 				{
 					var path = paths[pIndex];
-					Debug.Log($"PathTileDecorator: Processing path {pIndex} with {path.Count} waypoints");
+					//Debug.Log($"PathTileDecorator: Processing path {pIndex} with {path.Count} waypoints");
 					
 					for (int step = 0; step < path.Count; step++)
 					{
@@ -131,10 +131,10 @@ namespace CrystalDefenders.Generation
 					}
 				}
 				
-				Debug.Log($"PathTileDecorator: Generated {gridKeys.Count} unique grid keys from {paths.Sum(p => p.Count)} waypoints");
+				//Debug.Log($"PathTileDecorator: Generated {gridKeys.Count} unique grid keys from {paths.Sum(p => p.Count)} waypoints");
 			}
 
-			            Debug.Log($"PathTileDecorator: Placing {gridKeys.Count} path tiles");
+			            //Debug.Log($"PathTileDecorator: Placing {gridKeys.Count} path tiles");
             
             // Place path tiles with rotation and corner detection
             int tilesPlaced = 0;
@@ -264,7 +264,7 @@ namespace CrystalDefenders.Generation
                 }
             }
             
-            Debug.Log($"PathTileDecorator: Successfully placed {tilesPlaced} path tiles");
+            //Debug.Log($"PathTileDecorator: Successfully placed {tilesPlaced} path tiles");
 
 			// Transition edge tiles
 			//if (placeTransitions && transitionTilePrefab != null)
@@ -291,23 +291,23 @@ namespace CrystalDefenders.Generation
                 if (useSpawnerTransforms)
                 {
                     var spawners = FindObjectsOfType<Units.EnemySpawner>();
-                    Debug.Log($"PathTileDecorator: Found {spawners.Length} spawners for spawn markers");
+                    //Debug.Log($"PathTileDecorator: Found {spawners.Length} spawners for spawn markers");
                     foreach (var spawner in spawners)
                     {
                         var p = spawner.transform.position; p.y += yOffset + 0.05f; // Above tiles
                         Instantiate(spawnTilePrefab, p, Quaternion.identity, parent);
-                        Debug.Log($"PathTileDecorator: Placed spawn marker at {p} for spawner {spawner.name}");
+                        //Debug.Log($"PathTileDecorator: Placed spawn marker at {p} for spawner {spawner.name}");
                     }
                 }
                 else
                 {
                     var spawnPositions = generator.SpawnPositions;
-                    Debug.Log($"PathTileDecorator: Using {spawnPositions.Count} generator spawn positions");
+                    //Debug.Log($"PathTileDecorator: Using {spawnPositions.Count} generator spawn positions");
                     foreach (var sp in spawnPositions)
                     {
                         var pos = new Vector3(sp.x, sp.y + yOffset + 0.05f, sp.z); // Above tiles
                         Instantiate(spawnTilePrefab, pos, Quaternion.identity, parent);
-                        Debug.Log($"PathTileDecorator: Placed spawn marker at {pos}");
+                        //Debug.Log($"PathTileDecorator: Placed spawn marker at {pos}");
                     }
                 }
             }
@@ -344,15 +344,15 @@ namespace CrystalDefenders.Generation
             if (generator == null) return;
             Transform parent = propsContainer != null ? propsContainer : transform;
 
-            Debug.Log($"PathTileDecorator: Starting prop decoration - Trees: {treeCount}, Rocks: {rockCount}, Details: {detailCount}");
+            //Debug.Log($"PathTileDecorator: Starting prop decoration - Trees: {treeCount}, Rocks: {rockCount}, Details: {detailCount}");
 
             // Get all available terrain positions, excluding paths and placement nodes
             var availablePositions = GetAvailablePropPositions();
-            Debug.Log($"PathTileDecorator: Found {availablePositions.Count} available positions for props");
+            //Debug.Log($"PathTileDecorator: Found {availablePositions.Count} available positions for props");
 
             if (availablePositions.Count == 0)
             {
-                Debug.LogWarning("PathTileDecorator: No available positions for props!");
+                //Debug.LogWarning("PathTileDecorator: No available positions for props!");
                 return;
             }
 
@@ -476,7 +476,7 @@ namespace CrystalDefenders.Generation
             int maxAttempts = count * 10; // Prevent infinite loops
             int attempts = 0;
 
-            Debug.Log($"PathTileDecorator: Attempting to place {count} {propType}s from {positions.Count} available positions");
+            //Debug.Log($"PathTileDecorator: Attempting to place {count} {propType}s from {positions.Count} available positions");
 
             while (placed < count && positions.Count > 0 && attempts < maxAttempts)
             {
@@ -529,14 +529,14 @@ namespace CrystalDefenders.Generation
                     allPlacedPositions.Add(pos);
                     placed++;
                     
-                    Debug.Log($"PathTileDecorator: Placed {propType} at {finalPos}");
+                    //Debug.Log($"PathTileDecorator: Placed {propType} at {finalPos}");
                 }
                 
                 // Remove this position from available ones to avoid infinite loops
                 positions.RemoveAt(randomIndex);
             }
             
-            Debug.Log($"PathTileDecorator: Successfully placed {placed} {propType}s after {attempts} attempts");
+            //Debug.Log($"PathTileDecorator: Successfully placed {placed} {propType}s after {attempts} attempts");
         }
 
         private bool IsPositionValidForProp(Vector3 position, List<Vector3> existingProps)
@@ -576,7 +576,7 @@ namespace CrystalDefenders.Generation
                 placedPositions.Add(node.transform.position);
             }
             
-            Debug.Log($"PathTileDecorator: Pre-populated {placementNodes.Length} placement node positions for collision avoidance");
+            //Debug.Log($"PathTileDecorator: Pre-populated {placementNodes.Length} placement node positions for collision avoidance");
         }
 
 		private void OnValidate()

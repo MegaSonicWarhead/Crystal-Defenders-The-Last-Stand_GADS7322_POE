@@ -33,16 +33,16 @@ namespace CrystalDefenders.Gameplay
             if (terrainGenerator == null) terrainGenerator = FindObjectOfType<ProceduralTerrainGenerator>();
             if (terrainGenerator == null)
             {
-                Debug.LogError("GameManager: No ProceduralTerrainGenerator found!");
+                //Debug.LogError("GameManager: No ProceduralTerrainGenerator found!");
                 return;
             }
             
-            Debug.Log("GameManager: Starting terrain generation...");
+            //Debug.Log("GameManager: Starting terrain generation...");
             terrainGenerator.GenerateTerrainAndPaths();
             
             var paths = terrainGenerator.PathWaypoints;
             var spawns = terrainGenerator.SpawnPositions;
-            Debug.Log($"GameManager: Terrain generated - {paths.Count} paths, {spawns.Count} spawn positions");
+            //Debug.Log($"GameManager: Terrain generated - {paths.Count} paths, {spawns.Count} spawn positions");
 
             SpawnTowerAtHub();
             CreateSpawners();
@@ -59,7 +59,7 @@ namespace CrystalDefenders.Gameplay
         {
             if (towerPrefab == null)
             {
-                Debug.LogError("Tower prefab not assigned on GameManager");
+                //Debug.LogError("Tower prefab not assigned on GameManager");
                 return;
             }
             var tower = Instantiate(towerPrefab, terrainGenerator.HubWorldPosition, Quaternion.identity);
@@ -73,7 +73,7 @@ namespace CrystalDefenders.Gameplay
             spawners.Clear();
 
             var paths = terrainGenerator.PathWaypoints;
-            Debug.Log($"GameManager: Creating spawners for {paths.Count} paths");
+            //Debug.Log($"GameManager: Creating spawners for {paths.Count} paths");
             
             for (int i = 0; i < paths.Count; i++)
             {
@@ -87,7 +87,7 @@ namespace CrystalDefenders.Gameplay
                 spawner.Initialize(pathList);
                 spawners.Add(spawner);
                 WaveManager.Instance.RegisterSpawner(spawner);
-                Debug.Log($"GameManager: Created spawner {i} at {spawnPos} with {pathList.Count} waypoints");
+                //Debug.Log($"GameManager: Created spawner {i} at {spawnPos} with {pathList.Count} waypoints");
             }
         }
 
@@ -95,13 +95,13 @@ namespace CrystalDefenders.Gameplay
         {
             // Invoke any PathTileDecorator in the scene after terrain and spawners exist
             var decorators = FindObjectsOfType<Generation.PathTileDecorator>();
-            Debug.Log($"GameManager: Found {decorators.Length} PathTileDecorators to update");
+           // Debug.Log($"GameManager: Found {decorators.Length} PathTileDecorators to update");
             
             foreach (var deco in decorators)
             {
                 if (deco != null)
                 {
-                    Debug.Log($"GameManager: Updating PathTileDecorator {deco.name}");
+                    //Debug.Log($"GameManager: Updating PathTileDecorator {deco.name}");
                     deco.DecoratePaths();
                 }
             }

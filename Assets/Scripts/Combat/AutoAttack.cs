@@ -31,12 +31,14 @@ namespace CrystalDefenders.Combat
             {
                 h.ApplyDamage(damagePerHit);
                 lastShotTime = now;
+                Debug.Log($"{gameObject.name} auto-attacked {target.name} for {damagePerHit} damage");
             }
         }
 
         private Enemy FindNearestEnemyInRange()
         {
-            Enemy best = null; float bestD = float.MaxValue;
+            Enemy best = null;
+            float bestD = float.MaxValue;
             foreach (var e in EnemyRegistry.Enemies)
             {
                 if (e == null) continue;

@@ -9,7 +9,7 @@ namespace CrystalDefenders.Units
     public class Defender : MonoBehaviour
     {
         public const int Cost = 100;
-        public const int RepairCost = 25; // for +50 HP (gameplay rule, repair logic elsewhere)
+        public const int RepairCost = 25;
 
         private Health health;
         private static readonly List<Defender> registry = new List<Defender>();
@@ -23,16 +23,20 @@ namespace CrystalDefenders.Units
             aa.range = 5f;
             aa.shotsPerSecond = 2f;
             aa.damagePerHit = 15;
+
+            Debug.Log($"Defender Awake: {gameObject.name}");
         }
 
         private void OnEnable()
         {
             if (!registry.Contains(this)) registry.Add(this);
+            Debug.Log($"Defender Enabled: {gameObject.name}, total registry: {registry.Count}");
         }
 
         private void OnDisable()
         {
             registry.Remove(this);
+            Debug.Log($"Defender Disabled: {gameObject.name}, remaining registry: {registry.Count}");
         }
     }
 }

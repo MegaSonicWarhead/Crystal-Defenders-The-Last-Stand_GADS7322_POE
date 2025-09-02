@@ -19,10 +19,13 @@ namespace CrystalDefenders.Units
             aa.range = 6f;
             aa.shotsPerSecond = 1.5f;
             aa.damagePerHit = 20;
+
+            Debug.Log($"Tower Awake: {gameObject.name}");
         }
 
         private void OnTowerDestroyed()
         {
+            Debug.Log($"Tower {gameObject.name} destroyed");
             Gameplay.GameManager.Instance?.OnTowerDestroyed();
         }
     }

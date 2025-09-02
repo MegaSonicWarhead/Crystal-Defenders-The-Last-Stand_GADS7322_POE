@@ -8,7 +8,11 @@ namespace CrystalDefenders.Units
     [RequireComponent(typeof(Health))]
     public class Enemy : MonoBehaviour
     {
-        [Header("Stats")] public float moveSpeed = 3f; public int contactDamage = 10; public float attackRange = 1.0f; public float attackCooldown = 1.0f;
+        [Header("Stats")]
+        public float moveSpeed = 3f;
+        public int contactDamage = 10;
+        public float attackRange = 1.0f;
+        public float attackCooldown = 1.0f;
 
         private readonly List<Vector3> waypoints = new List<Vector3>();
         private int currentWpIndex = 0;
@@ -20,16 +24,19 @@ namespace CrystalDefenders.Units
         {
             health = GetComponent<Health>();
             health.onDeath.AddListener(OnDeath);
+            Debug.Log($"Enemy Awake: {gameObject.name}");
         }
 
         private void OnEnable()
         {
             EnemyRegistry.Register(this);
+            Debug.Log($"Enemy Enabled: {gameObject.name}");
         }
 
         private void OnDisable()
         {
             EnemyRegistry.Unregister(this);
+            Debug.Log($"Enemy Disabled: {gameObject.name}");
         }
 
         private void Update()
@@ -43,13 +50,13 @@ namespace CrystalDefenders.Units
             waypoints.Clear();
             waypoints.AddRange(worldWaypoints);
             currentWpIndex = 0;
-            
-            // Ensure enemy starts at proper height above the path
+
             if (waypoints.Count > 0)
             {
                 Vector3 startPos = transform.position;
-                startPos.y = waypoints[0].y + 0.05f; // Start above the first waypoint
+                startPos.y = waypoints[0].y + 0.05f;
                 transform.position = startPos;
+                //Debug.Log($"Enemy {gameObject.name} SetPath to start at {transform.position}");
             }
         }
 
@@ -62,24 +69,23 @@ namespace CrystalDefenders.Units
             Vector3 to = target - pos;
             to.y = 0f;
             float dist = to.magnitude;
+
             if (dist < 0.05f)
             {
                 currentWpIndex++;
+               // Debug.Log($"Enemy {gameObject.name} reached waypoint {currentWpIndex}/{waypoints.Count}");
                 return;
             }
 
             Vector3 dir = to.normalized;
             Vector3 newPos = pos + dir * (moveSpeed * Time.deltaTime);
-            
-            // Keep enemy at tile height (slightly above terrain)
-            newPos.y = target.y + 0.05f; // 0.05f above the waypoint height
-            
+            newPos.y = target.y + 0.05f;
+
             transform.position = newPos;
         }
 
         private void TryAttackTargets()
         {
-            // Attack nearest defender or tower within attackRange
             float now = Time.time;
             if (now - lastAttackTime < attackCooldown) return;
 
@@ -94,15 +100,16 @@ namespace CrystalDefenders.Units
                 {
                     h.ApplyDamage(contactDamage);
                     lastAttackTime = now;
+                    Debug.Log($"Enemy {gameObject.name} attacked {closestTarget.name} for {contactDamage} damage");
                 }
             }
         }
 
         private GameObject GetClosestDamageable()
         {
-            GameObject best = null; float bestD = float.MaxValue;
+            GameObject best = null;
+            float bestD = float.MaxValue;
 
-            // Check tower
             var gm = Gameplay.GameManager.Instance;
             if (gm != null && gm.Tower != null)
             {
@@ -113,7 +120,6 @@ namespace CrystalDefenders.Units
                 }
             }
 
-            // Check defenders
             foreach (var def in Defender.Registry)
             {
                 if (def == null) continue;
@@ -127,14 +133,15 @@ namespace CrystalDefenders.Units
             return best;
         }
 
-        private void OnDeath()
+        public void OnDeath()
         {
-            // Resource reward and wave bookkeeping
             ResourceManager.Instance?.AddResources(25);
             WaveManager.Instance?.OnEnemyDied();
+            Debug.Log($"Enemy {gameObject.name} died");
             Destroy(gameObject);
         }
     }
 }
+
 
 
