@@ -709,7 +709,60 @@ using UnityEngine;
                 }
             }
 
-            public List<Vector3> GetCandidatePlacementNodes(int desiredCount = 16, float minHeight = 0.8f, float minDistanceToPath = 1.5f)
+        public List<Vector3> GetCandidateNodesNearPaths(float distanceFromPath = 2f, int minPerPath = 2)
+        {
+            var result = new List<Vector3>();
+
+            if (PathWaypoints == null || PathWaypoints.Count == 0) return result;
+
+            foreach (var path in PathWaypoints)
+            {
+                var pathNodes = new List<Vector3>();
+
+                foreach (var waypoint in path)
+                {
+                    // Check nearby grid tiles
+                    for (int dx = -2; dx <= 2; dx++)
+                    {
+                        for (int dy = -2; dy <= 2; dy++)
+                        {
+                            Vector2Int grid = WorldToGridKey(waypoint) + new Vector2Int(dx, dy);
+                            if (!IsInGrid(grid)) continue;
+
+                            Vector3 worldPos = GridToWorldCenter(grid);
+
+                            // Must not be on the path itself
+                            if (Vector3.Distance(worldPos, waypoint) < tileSize * 0.8f) continue;
+
+                            // Must be close enough to the path
+                            if (Vector3.Distance(worldPos, waypoint) <= distanceFromPath)
+                            {
+                                pathNodes.Add(worldPos);
+                            }
+                        }
+                    }
+                }
+
+                // Pick at least minPerPath nodes from this path
+                Shuffle(pathNodes);
+                for (int i = 0; i < Mathf.Min(minPerPath, pathNodes.Count); i++)
+                {
+                    result.Add(pathNodes[i]);
+                }
+            }
+
+            return result;
+        }
+
+        // Helper: convert world pos to grid coordinates
+        private Vector2Int WorldToGridKey(Vector3 worldPos)
+        {
+            int x = Mathf.FloorToInt(worldPos.x / tileSize);
+            int y = Mathf.FloorToInt(worldPos.z / tileSize);
+            return new Vector2Int(x, y);
+        }
+
+        public List<Vector3> GetCandidatePlacementNodes(int desiredCount = 16, float minHeight = 0.8f, float minDistanceToPath = 1.5f)
             {
                 var nodes = new List<Vector3>();
                 var candidates = new List<Vector2Int>();
