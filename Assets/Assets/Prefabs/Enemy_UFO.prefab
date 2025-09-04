@@ -70,7 +70,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 3
   contactDamage: 10
-  attackRange: 1
+  attackRange: 5
   attackCooldown: 1
 --- !u!1001 &133480579275785386
 PrefabInstance:

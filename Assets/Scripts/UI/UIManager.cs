@@ -1,4 +1,4 @@
-using CrystalDefenders.Combat;
+﻿using CrystalDefenders.Combat;
 using CrystalDefenders.Units;
 using CrystalDefenders.Gameplay;
 using System.Collections;
@@ -10,60 +10,35 @@ using UnityEngine.SceneManagement;
 
 public class UIManager : MonoBehaviour
 {
+    public static UIManager Instance { get; private set; }
+
     [Header("Prefabs & UI References")]
-    public GameObject healthBarPrefab;   // should be a Slider prefab
-    public GameObject damageNumberPrefab;
-    public Transform healthBarContainer;
-    public TMP_Text resourceText;
-    public List<Button> defenderButtons;
-    public TMP_Text[] defenderCostTexts;
+    public GameObject healthBarPrefab;   // Slider prefab
+    public Transform healthBarContainer; // Canvas container for enemy bars
+
+    [Header("Tower UI")]
+    public TMP_Text towerHealthText;     // Assign your UI panel text here
 
     private Dictionary<Health, Slider> healthBars = new Dictionary<Health, Slider>();
+    private Tower trackedTower;
 
-    private void Start()
+    private void Awake()
     {
-        UpdateResourcesUI();
-        SetupDefenderButtons();
-        SubscribeToDefenderHealth();
-        SubscribeToTowerHealth();
-        SubscribeToEnemyHealth();
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
     }
 
     private void Update()
     {
-        UpdateHealthBars();
+        UpdateHealthBarPositions();
     }
 
-    #region Health Bars
-
-    private void SubscribeToDefenderHealth()
-    {
-        foreach (var def in Defender.Registry)
-        {
-            AddHealthBar(def.GetComponent<Health>());
-        }
-    }
-
-    private void SubscribeToTowerHealth()
-    {
-        var tower = FindObjectOfType<Tower>();
-        if (tower != null)
-        {
-            var h = tower.GetComponent<Health>();
-            AddHealthBar(h);
-            h.onDeath.AddListener(OnTowerDestroyed);
-        }
-    }
-
-    private void SubscribeToEnemyHealth()
-    {
-        foreach (var enemy in EnemyRegistry.Enemies)
-        {
-            AddHealthBar(enemy.GetComponent<Health>());
-        }
-    }
-
-    private void AddHealthBar(Health health)
+    // ================= Enemy Health Bars =================
+    public void AttachHealthBar(Health health)
     {
         if (health == null || healthBars.ContainsKey(health)) return;
 
@@ -72,116 +47,94 @@ public class UIManager : MonoBehaviour
 
         if (bar == null)
         {
-            Debug.LogError("HealthBarPrefab is missing a Slider component!");
+            Debug.LogError("HealthBarPrefab must have a Slider component!");
             Destroy(hbObj);
             return;
         }
 
-        // Set slider min/max
         bar.minValue = 0;
         bar.maxValue = health.MaxHealth;
         bar.value = health.CurrentHealth;
 
-        health.onDamaged.AddListener(amount =>
-        {
-            bar.value = health.CurrentHealth;
-            ShowDamageNumber(health.transform.position, amount);
-        });
+        // Update slider on health changes
+        health.onDamaged.AddListener(_ => UpdateBarValue(health));
+        health.onHealed.AddListener(_ => UpdateBarValue(health));
 
-        health.onHealed.AddListener(amount =>
+        // Remove bar when enemy dies
+        health.onDeath.AddListener(() =>
         {
-            bar.value = health.CurrentHealth;
+            if (healthBars.ContainsKey(health))
+                healthBars.Remove(health);
+            Destroy(hbObj);
         });
-
-        health.onDeath.AddListener(() => { Destroy(hbObj); });
 
         healthBars.Add(health, bar);
     }
 
-    private void UpdateHealthBars()
+    private void UpdateBarValue(Health health)
     {
+        if (health != null && healthBars.TryGetValue(health, out Slider bar) && bar != null)
+        {
+            bar.value = health.CurrentHealth;
+        }
+    }
+
+    private void UpdateHealthBarPositions()
+    {
+        List<Health> toRemove = null;
+
         foreach (var kvp in healthBars)
         {
-            var h = kvp.Key;
+            var health = kvp.Key;
             var bar = kvp.Value;
-            if (h != null && bar != null)
+
+            if (health == null || bar == null)
             {
-                bar.value = h.CurrentHealth;
-                Vector3 screenPos = Camera.main.WorldToScreenPoint(h.transform.position + Vector3.up * 2f);
-                bar.transform.position = screenPos;
+                if (toRemove == null) toRemove = new List<Health>();
+                toRemove.Add(health);
+                continue;
             }
+
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(health.transform.position + Vector3.up * 2f);
+            bar.transform.position = screenPos;
         }
-    }
 
-    #endregion
-
-    #region Damage Numbers
-
-    private void ShowDamageNumber(Vector3 worldPos, int amount)
-    {
-        GameObject dmg = Instantiate(damageNumberPrefab, healthBarContainer);
-        dmg.GetComponent<TMP_Text>().text = amount.ToString();
-        dmg.transform.position = Camera.main.WorldToScreenPoint(worldPos + Vector3.up * 2f);
-        Destroy(dmg, 1f); // auto-destroy after 1 second
-    }
-
-    #endregion
-
-    #region Resources UI
-
-    public void UpdateResourcesUI()
-    {
-        if (resourceText != null && ResourceManager.Instance != null)
+        if (toRemove != null)
         {
-            resourceText.text = $"Resources: {ResourceManager.Instance.CurrentResources}";
+            foreach (var h in toRemove)
+                healthBars.Remove(h);
         }
-
-        UpdateDefenderButtonStates();
     }
 
-    private void SetupDefenderButtons()
+    // ================= Tower Health Panel =================
+    public void TrackTower(Tower tower)
     {
-        for (int i = 0; i < defenderButtons.Count; i++)
+        if (tower == null) return;
+
+        // Stop tracking previous tower
+        if (trackedTower != null)
         {
-            int cost = Defender.Cost;
-            if (i < defenderCostTexts.Length)
-                defenderCostTexts[i].text = cost.ToString();
-
-            int index = i;
-            defenderButtons[i].onClick.AddListener(() =>
-            {
-                TryPlaceDefender(index);
-            });
+            var prevHealth = trackedTower.GetComponent<Health>();
+            prevHealth.onDamaged.RemoveListener(UpdateTowerHealthUI);
+            prevHealth.onHealed.RemoveListener(UpdateTowerHealthUI);
+            trackedTower = null;
         }
-    }
 
-    private void UpdateDefenderButtonStates()
-    {
-        foreach (var btn in defenderButtons)
+        trackedTower = tower;
+        var health = tower.GetComponent<Health>();
+        if (health != null)
         {
-            btn.interactable = ResourceManager.Instance.CurrentResources >= Defender.Cost;
+            health.onDamaged.AddListener(UpdateTowerHealthUI);
+            health.onHealed.AddListener(UpdateTowerHealthUI);
+            UpdateTowerHealthUI(0);
         }
     }
 
-    private void TryPlaceDefender(int index)
+    private void UpdateTowerHealthUI(int _)
     {
-        if (ResourceManager.Instance.CurrentResources >= Defender.Cost)
-        {
-            ResourceManager.Instance.Spend(Defender.Cost);
-            UpdateResourcesUI();
-            Debug.Log($"Placed Defender #{index}");
-        }
+        if (trackedTower == null || towerHealthText == null) return;
+
+        var health = trackedTower.GetComponent<Health>();
+        towerHealthText.text = $"Crystal Tower Health: {health.CurrentHealth}/{health.MaxHealth}";
     }
-
-    #endregion
-
-    #region Tower Destroyed
-
-    private void OnTowerDestroyed()
-    {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene("GameOver"); // <-- replace with your Game Over scene name
-    }
-
-    #endregion
 }

@@ -1,7 +1,9 @@
-using System.Collections.Generic;
-using UnityEngine;
 using CrystalDefenders.Generation;
 using CrystalDefenders.Units;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CrystalDefenders.Gameplay
 {
@@ -126,9 +128,15 @@ namespace CrystalDefenders.Gameplay
 
         public void OnTowerDestroyed()
         {
-            // Show Game Over UI here; for now log and stop gameplay
             Debug.Log("Game Over — Tower destroyed");
-            Time.timeScale = 0f;
+            StartCoroutine(GoToGameOver());
+        }
+
+        private IEnumerator GoToGameOver()
+        {
+            yield return new WaitForSeconds(1f); // 1 second delay
+            Time.timeScale = 1f;
+            SceneManager.LoadScene("GameOver");
         }
     }
 }

@@ -1,5 +1,6 @@
-using UnityEngine;
 using CrystalDefenders.Combat;
+using TMPro;
+using UnityEngine;
 
 namespace CrystalDefenders.Units
 {
@@ -8,6 +9,9 @@ namespace CrystalDefenders.Units
     public class Tower : MonoBehaviour
     {
         private Health health;
+
+        [Header("UI Panel")]
+        public TMP_Text healthText; // Assign in your UI panel
 
         private void Awake()
         {
@@ -20,15 +24,30 @@ namespace CrystalDefenders.Units
             aa.shotsPerSecond = 1.5f;
             aa.damagePerHit = 20;
 
-            Debug.Log($"Tower Awake: {gameObject.name}");
+            // Track this tower in the UI panel
+            if (UIManager.Instance != null)
+                UIManager.Instance.TrackTower(this);
+        }
+
+        private void UpdateHealthUI(int _)
+        {
+            if (healthText != null)
+            {
+                healthText.text = $"Crystal Tower Health: {health.CurrentHealth}/{health.MaxHealth}";
+            }
         }
 
         private void OnTowerDestroyed()
         {
             Debug.Log($"Tower {gameObject.name} destroyed");
             Gameplay.GameManager.Instance?.OnTowerDestroyed();
+
+            // Optionally clear UI
+            if (healthText != null)
+                healthText.text = "Tower Destroyed";
         }
     }
 }
+
 
 

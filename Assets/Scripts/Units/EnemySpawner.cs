@@ -1,3 +1,4 @@
+using CrystalDefenders.Combat;
 using CrystalDefenders.Generation;
 using System;
 using System.Collections;
@@ -9,6 +10,7 @@ namespace CrystalDefenders.Units
     public class EnemySpawner : MonoBehaviour
     {
 
+        [Header("Spawning Settings")]
         public Enemy enemyPrefab;
         public int pathIndex = 0;
         public float spawnIntervalSeconds = 1.5f;
@@ -24,17 +26,24 @@ namespace CrystalDefenders.Units
         // Callback for newly spawned enemies
         private Action<Enemy> onEnemySpawned;
 
+        // Wave scaling
+        private int currentWave = 1;
+        private int baseHealth = 10;
+        private int healthIncreasePerWave = 10;
+
         public void Initialize(IList<Vector3> pathWaypoints)
         {
             assignedPath = pathWaypoints;
         }
 
-        public void BeginSpawning(int totalToSpawn)
+        public void BeginSpawning(int totalToSpawn, int waveNumber = 1)
         {
+            currentWave = waveNumber;
             BeginSpawning(totalToSpawn, null, null, null, null);
         }
 
-        public void BeginSpawning(int totalToSpawn, IList<Enemy> variants, IList<float> weights = null, float? intervalSeconds = null, Action<Enemy> onSpawned = null)
+        public void BeginSpawning(int totalToSpawn, IList<Enemy> variants, IList<float> weights = null,
+            float? intervalSeconds = null, Action<Enemy> onSpawned = null)
         {
             if (spawningRoutine != null) StopCoroutine(spawningRoutine);
 
@@ -78,7 +87,22 @@ namespace CrystalDefenders.Units
             var enemy = Instantiate(prefab, spawnPos, Quaternion.identity);
             enemy.SetPath(assignedPath);
 
-            // Call the health setup callback if provided
+            // === NEW CODE: Scale enemy health by wave ===
+            var health = enemy.GetComponent<Health>();
+            if (health != null)
+            {
+                int newMaxHealth = baseHealth + (healthIncreasePerWave * (currentWave - 1));
+                health.SetMaxHealth(newMaxHealth); // you must implement SetMaxHealth in Health.cs
+                health.CurrentHealth = newMaxHealth;
+
+                // Attach health bar automatically
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.AttachHealthBar(health);
+                }
+            }
+
+            // Call the external callback if provided
             onEnemySpawned?.Invoke(enemy);
         }
 

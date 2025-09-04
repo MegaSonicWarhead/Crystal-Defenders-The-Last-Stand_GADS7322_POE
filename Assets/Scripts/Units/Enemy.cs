@@ -11,7 +11,7 @@ namespace CrystalDefenders.Units
         [Header("Stats")]
         public float moveSpeed = 3f;
         public int contactDamage = 10;
-        public float attackRange = 1.0f;
+        public float attackRange = 5.0f;
         public float attackCooldown = 1.0f;
 
         private readonly List<Vector3> waypoints = new List<Vector3>();
@@ -24,19 +24,19 @@ namespace CrystalDefenders.Units
         {
             health = GetComponent<Health>();
             health.onDeath.AddListener(OnDeath);
-            Debug.Log($"Enemy Awake: {gameObject.name}");
+            //Debug.Log($"Enemy Awake: {gameObject.name}");
         }
 
         private void OnEnable()
         {
             EnemyRegistry.Register(this);
-            Debug.Log($"Enemy Enabled: {gameObject.name}");
+            //Debug.Log($"Enemy Enabled: {gameObject.name}");
         }
 
         private void OnDisable()
         {
             EnemyRegistry.Unregister(this);
-            Debug.Log($"Enemy Disabled: {gameObject.name}");
+            //Debug.Log($"Enemy Disabled: {gameObject.name}");
         }
 
         private void Update()
@@ -86,6 +86,7 @@ namespace CrystalDefenders.Units
 
         private void TryAttackTargets()
         {
+            Debug.Log("jy is vet");
             float now = Time.time;
             if (now - lastAttackTime < attackCooldown) return;
 
@@ -96,8 +97,10 @@ namespace CrystalDefenders.Units
             if (d <= attackRange)
             {
                 var h = closestTarget.GetComponent<Health>();
+                Debug.Log("jy is vet2");
                 if (h != null)
                 {
+                    Debug.Log("jy is vet3");
                     h.ApplyDamage(contactDamage);
                     lastAttackTime = now;
                     Debug.Log($"Enemy {gameObject.name} attacked {closestTarget.name} for {contactDamage} damage");
@@ -137,7 +140,7 @@ namespace CrystalDefenders.Units
         {
             ResourceManager.Instance?.AddResources(25);
             WaveManager.Instance?.OnEnemyDied();
-            Debug.Log($"Enemy {gameObject.name} died");
+            //Debug.Log($"Enemy {gameObject.name} died");
             Destroy(gameObject);
         }
     }

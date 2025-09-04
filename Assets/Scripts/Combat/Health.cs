@@ -8,7 +8,27 @@ namespace CrystalDefenders.Combat
     {
         [SerializeField] private int maxHealth = 100;
         public int MaxHealth => maxHealth;
-        public int CurrentHealth { get; private set; }
+
+        private int currentHealth;
+        public int CurrentHealth
+        {
+            get => currentHealth;
+            set
+            {
+                if (currentHealth == value) return;
+
+                int delta = value - currentHealth;
+                currentHealth = Mathf.Clamp(value, 0, MaxHealth);
+
+                if (delta < 0)
+                    onDamaged?.Invoke(-delta);
+                else if (delta > 0)
+                    onHealed?.Invoke(delta);
+
+                if (currentHealth == 0)
+                    onDeath?.Invoke();
+            }
+        }
 
         public UnityEvent onDeath;
         public UnityEvent<int> onDamaged;
@@ -17,36 +37,28 @@ namespace CrystalDefenders.Combat
         private void Awake()
         {
             CurrentHealth = maxHealth;
-            Debug.Log($"{gameObject.name} Health Awake: {CurrentHealth}/{maxHealth}");
+            //Debug.Log($"{gameObject.name} Health Awake: {CurrentHealth}/{maxHealth}");
         }
 
         public void SetMaxHealth(int value, bool fill = true)
         {
             maxHealth = Mathf.Max(1, value);
             if (fill) CurrentHealth = maxHealth;
-            Debug.Log($"{gameObject.name} SetMaxHealth: {CurrentHealth}/{maxHealth}");
+            //Debug.Log($"{gameObject.name} SetMaxHealth: {CurrentHealth}/{maxHealth}");
         }
 
         public void ApplyDamage(int amount)
         {
             if (amount <= 0 || CurrentHealth <= 0) return;
-            CurrentHealth = Mathf.Max(0, CurrentHealth - amount);
+            CurrentHealth -= amount;
             Debug.Log($"{gameObject.name} took {amount} damage, current: {CurrentHealth}/{maxHealth}");
-            onDamaged?.Invoke(amount);
-            if (CurrentHealth == 0)
-            {
-                Debug.Log($"{gameObject.name} died");
-                onDeath?.Invoke();
-            }
         }
 
         public void Heal(int amount)
         {
             if (amount <= 0 || CurrentHealth <= 0) return;
-            int before = CurrentHealth;
-            CurrentHealth = Mathf.Min(maxHealth, CurrentHealth + amount);
-            Debug.Log($"{gameObject.name} healed {CurrentHealth - before}, current: {CurrentHealth}/{maxHealth}");
-            onHealed?.Invoke(CurrentHealth - before);
+            CurrentHealth += amount;
+            //Debug.Log($"{gameObject.name} healed, current: {CurrentHealth}/{maxHealth}");
         }
     }
 }

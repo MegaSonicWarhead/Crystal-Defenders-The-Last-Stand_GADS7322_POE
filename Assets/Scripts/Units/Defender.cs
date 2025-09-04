@@ -19,24 +19,29 @@ namespace CrystalDefenders.Units
         {
             health = GetComponent<Health>();
             health.SetMaxHealth(200, true);
+
             var aa = GetComponent<AutoAttack>();
             aa.range = 5f;
             aa.shotsPerSecond = 2f;
             aa.damagePerHit = 15;
 
-            Debug.Log($"Defender Awake: {gameObject.name}");
+            // Attach health bar to UI
+            if (UIManager.Instance != null)
+                UIManager.Instance.AttachHealthBar(health);
+
+            //Debug.Log($"Defender Awake: {gameObject.name}");
         }
 
         private void OnEnable()
         {
             if (!registry.Contains(this)) registry.Add(this);
-            Debug.Log($"Defender Enabled: {gameObject.name}, total registry: {registry.Count}");
+            //Debug.Log($"Defender Enabled: {gameObject.name}, total registry: {registry.Count}");
         }
 
         private void OnDisable()
         {
             registry.Remove(this);
-            Debug.Log($"Defender Disabled: {gameObject.name}, remaining registry: {registry.Count}");
+            //Debug.Log($"Defender Disabled: {gameObject.name}, remaining registry: {registry.Count}");
         }
     }
 }
