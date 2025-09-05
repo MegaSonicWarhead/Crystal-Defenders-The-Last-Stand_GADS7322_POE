@@ -895,7 +895,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 417839767}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 976655876}
+        m_TargetAssemblyTypeName: PauseMenu, Assembly-CSharp
+        m_MethodName: ExitGame
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &417839767
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1050,7 +1062,6 @@ GameObject:
   - component: {fileID: 594382733}
   - component: {fileID: 594382732}
   - component: {fileID: 594382731}
-  - component: {fileID: 594382730}
   m_Layer: 5
   m_Name: RestartBT
   m_TagString: Untagged
@@ -1078,19 +1089,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0.000015259, y: 0}
   m_SizeDelta: {x: 482.3849, y: 105.6903}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &594382730
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 594382728}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60c9fe5ed0a012147b9e78b986da5ea5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  pausePanel: {fileID: 1881602155}
 --- !u!114 &594382731
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1135,7 +1133,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 594382730}
+      - m_Target: {fileID: 976655876}
         m_TargetAssemblyTypeName: PauseMenu, Assembly-CSharp
         m_MethodName: RestartGame
         m_Mode: 1
@@ -2096,7 +2094,6 @@ GameObject:
   - component: {fileID: 992317211}
   - component: {fileID: 992317210}
   - component: {fileID: 992317209}
-  - component: {fileID: 992317208}
   m_Layer: 5
   m_Name: MainMenuBT
   m_TagString: Untagged
@@ -2124,19 +2121,6 @@ RectTransform:
   m_AnchoredPosition: {x: -0.000061035, y: -161}
   m_SizeDelta: {x: 482.3849, y: 105.6903}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &992317208
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 992317206}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60c9fe5ed0a012147b9e78b986da5ea5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  pausePanel: {fileID: 1881602155}
 --- !u!114 &992317209
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2181,7 +2165,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 992317208}
+      - m_Target: {fileID: 976655876}
         m_TargetAssemblyTypeName: PauseMenu, Assembly-CSharp
         m_MethodName: GoToMainMenu
         m_Mode: 1
@@ -3859,7 +3843,6 @@ GameObject:
   - component: {fileID: 1693359870}
   - component: {fileID: 1693359869}
   - component: {fileID: 1693359868}
-  - component: {fileID: 1693359867}
   m_Layer: 5
   m_Name: ResumeBT
   m_TagString: Untagged
@@ -3887,19 +3870,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0.000015259, y: 161}
   m_SizeDelta: {x: 482.3849, y: 105.6903}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1693359867
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1693359865}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60c9fe5ed0a012147b9e78b986da5ea5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  pausePanel: {fileID: 1881602155}
 --- !u!114 &1693359868
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3944,7 +3914,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1693359867}
+      - m_Target: {fileID: 976655876}
         m_TargetAssemblyTypeName: PauseMenu, Assembly-CSharp
         m_MethodName: ResumeGame
         m_Mode: 1
