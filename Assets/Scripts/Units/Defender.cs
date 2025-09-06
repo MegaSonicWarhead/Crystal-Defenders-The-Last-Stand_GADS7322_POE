@@ -25,23 +25,37 @@ namespace CrystalDefenders.Units
             aa.shotsPerSecond = 2f;
             aa.damagePerHit = 15;
 
-            // Attach health bar to UI
             if (UIManager.Instance != null)
                 UIManager.Instance.AttachHealthBar(health);
-
-            //Debug.Log($"Defender Awake: {gameObject.name}");
         }
 
         private void OnEnable()
         {
             if (!registry.Contains(this)) registry.Add(this);
-            //Debug.Log($"Defender Enabled: {gameObject.name}, total registry: {registry.Count}");
         }
 
         private void OnDisable()
         {
             registry.Remove(this);
-            //Debug.Log($"Defender Disabled: {gameObject.name}, remaining registry: {registry.Count}");
+        }
+
+        // --- Repair full health ---
+        public void RepairFull()
+        {
+            if (health != null)
+                health.Heal(health.MaxHealth - health.CurrentHealth);
+        }
+
+        // --- Repair partial (custom amount) ---
+        public void RepairAmount(int amount)
+        {
+            if (health != null)
+                health.Heal(amount);
+        }
+
+        public bool IsDamaged()
+        {
+            return health != null && health.CurrentHealth < health.MaxHealth;
         }
     }
 }

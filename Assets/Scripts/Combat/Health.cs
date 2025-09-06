@@ -54,6 +54,11 @@ namespace CrystalDefenders.Combat
             Debug.Log($"{gameObject.name} took {amount} damage, current: {CurrentHealth}/{maxHealth}");
         }
 
+        public void RestoreFullHealth()
+        {
+            CurrentHealth = MaxHealth;
+        }
+
         public void Heal(int amount)
         {
             if (amount <= 0 || CurrentHealth <= 0) return;
