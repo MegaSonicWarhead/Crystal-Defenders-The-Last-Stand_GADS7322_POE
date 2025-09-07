@@ -99,6 +99,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff6e67c29571fd542871e0366f8082b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  placementNodePrefab: {fileID: 6326495757445937941, guid: 5758acf4dd1028f41ace71d991081e0f, type: 3}
 --- !u!1 &4846203196028336108
 GameObject:
   m_ObjectHideFlags: 0
