@@ -12,6 +12,21 @@ namespace CrystalDefenders.Gameplay
 
         private readonly List<PlacementNode> nodes = new List<PlacementNode>();
 
+
+        private void Start()
+        {
+            var generator = FindObjectOfType<ProceduralTerrainGenerator>();
+            if (generator != null)
+            {
+                //generator.GenerateTerrainAndPaths(); // Ensure terrain and paths exist
+                CreateNodesNearPaths(generator, 3f, 2);
+            }
+            else
+            {
+                Debug.LogWarning("No ProceduralTerrainGenerator found in scene!");
+            }
+        }
+
         // For general placement anywhere
         public void CreateNodes(ProceduralTerrainGenerator generator)
         {
@@ -21,8 +36,9 @@ namespace CrystalDefenders.Gameplay
         }
 
         // For placements near paths
-        public void CreateNodesNearPaths(ProceduralTerrainGenerator generator, float distanceFromPath = 2f, int minNodesPerPath = 2)
+        public void CreateNodesNearPaths(ProceduralTerrainGenerator generator, float distanceFromPath = 3f, int minNodesPerPath = 2)
         {
+            Debug.Log("MEOW MEOW MEOW");
             ClearNodes();
             var positions = generator.GetCandidateNodesNearPaths(distanceFromPath, minNodesPerPath);
             InstantiateNodes(positions);

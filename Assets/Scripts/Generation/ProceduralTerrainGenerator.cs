@@ -712,8 +712,10 @@ using UnityEngine;
         public List<Vector3> GetCandidateNodesNearPaths(float distanceFromPath = 2f, int minPerPath = 2)
         {
             var result = new List<Vector3>();
+            var usedGridPositions = new HashSet<Vector2Int>(); // track global used tiles
 
-            if (PathWaypoints == null || PathWaypoints.Count == 0) return result;
+            if (PathWaypoints == null || PathWaypoints.Count == 0)
+                return result;
 
             foreach (var path in PathWaypoints)
             {
@@ -721,20 +723,20 @@ using UnityEngine;
 
                 foreach (var waypoint in path)
                 {
-                    // Check nearby grid tiles
-                    for (int dx = -2; dx <= 2; dx++)
+                    int radius = Mathf.CeilToInt(distanceFromPath / tileSize);
+
+                    for (int dx = -radius; dx <= radius; dx++)
                     {
-                        for (int dy = -2; dy <= 2; dy++)
+                        for (int dy = -radius; dy <= radius; dy++)
                         {
                             Vector2Int grid = WorldToGridKey(waypoint) + new Vector2Int(dx, dy);
                             if (!IsInGrid(grid)) continue;
+                            if (isPathTile[grid.x, grid.y]) continue;        // skip path
+                            if (usedGridPositions.Contains(grid)) continue;   // skip already used
 
                             Vector3 worldPos = GridToWorldCenter(grid);
 
-                            // Must not be on the path itself
-                            if (Vector3.Distance(worldPos, waypoint) < tileSize * 0.8f) continue;
-
-                            // Must be close enough to the path
+                            // Must be within distanceFromPath
                             if (Vector3.Distance(worldPos, waypoint) <= distanceFromPath)
                             {
                                 pathNodes.Add(worldPos);
@@ -743,11 +745,18 @@ using UnityEngine;
                     }
                 }
 
-                // Pick at least minPerPath nodes from this path
+                // Shuffle and pick at least minPerPath nodes
                 Shuffle(pathNodes);
-                for (int i = 0; i < Mathf.Min(minPerPath, pathNodes.Count); i++)
+
+                int nodesToAdd = Mathf.Min(minPerPath, pathNodes.Count);
+                for (int i = 0; i < nodesToAdd; i++)
                 {
-                    result.Add(pathNodes[i]);
+                    Vector3 nodePos = pathNodes[i];
+                    result.Add(nodePos);
+
+                    // mark the grid as used
+                    Vector2Int gridPos = WorldToGridKey(nodePos);
+                    usedGridPositions.Add(gridPos);
                 }
             }
 
