@@ -6,9 +6,14 @@ namespace CrystalDefenders.Combat
     [DisallowMultipleComponent]
     public class AutoAttack : MonoBehaviour
     {
+        [Header("Attack Settings")]
         public float range = 5f;
         public float shotsPerSecond = 2f;
         public int damagePerHit = 15;
+
+        [Header("Projectile Settings")]
+        [SerializeField] private GameObject projectilePrefab;
+        [SerializeField] private Transform firePoint; // Empty child as muzzle
 
         private float lastShotTime = -999f;
 
@@ -26,13 +31,24 @@ namespace CrystalDefenders.Combat
             Enemy target = FindNearestEnemyInRange();
             if (target == null) return;
 
-            var h = target.GetComponent<Health>();
-            if (h != null)
+            // Spawn a projectile instead of applying instant damage
+            ShootProjectile(target);
+
+            lastShotTime = now;
+        }
+
+        private void ShootProjectile(Enemy target)
+        {
+            if (projectilePrefab == null || firePoint == null) return;
+
+            GameObject proj = Instantiate(projectilePrefab, firePoint.position, Quaternion.identity);
+            Projectile p = proj.GetComponent<Projectile>();
+            if (p != null)
             {
-                h.ApplyDamage(damagePerHit);
-                lastShotTime = now;
-                Debug.Log($"{gameObject.name} auto-attacked {target.name} for {damagePerHit} damage");
+                p.Initialize(target.transform, damagePerHit);
             }
+
+            Debug.Log($"{gameObject.name} fired a projectile at {target.name}");
         }
 
         private Enemy FindNearestEnemyInRange()
@@ -45,7 +61,8 @@ namespace CrystalDefenders.Combat
                 float d = Vector3.Distance(transform.position, e.transform.position);
                 if (d < range && d < bestD)
                 {
-                    bestD = d; best = e;
+                    bestD = d;
+                    best = e;
                 }
             }
             return best;
