@@ -343,49 +343,30 @@ using UnityEngine;
                 return dy * 4f; // heavier cost for steep ascents/descents
             }
 
-            private void ApplyPathFlatteningAndWidening()
+        private void ApplyPathFlatteningAndWidening()
+        {
+            // Just widen the path flags – no flattening
+            if (pathWideningRadiusTiles > 0)
             {
-               // Debug.Log($"ProceduralTerrainGenerator: Starting path processing - {pathsGrid.Count} paths, {pathWideningRadiusTiles} widening radius");
-
-                // First, widen the path flags
-                if (pathWideningRadiusTiles > 0)
+                var widened = new bool[gridWidth, gridHeight];
+                for (int y = 0; y < gridHeight; y++)
                 {
-                    var widened = new bool[gridWidth, gridHeight];
-                    int widenedCount = 0;
-                    for (int y = 0; y < gridHeight; y++)
+                    for (int x = 0; x < gridWidth; x++)
                     {
-                        for (int x = 0; x < gridWidth; x++)
+                        if (isPathTile[x, y] || IsNearPath(new Vector2Int(x, y), pathWideningRadiusTiles))
                         {
-                            if (isPathTile[x, y] || IsNearPath(new Vector2Int(x, y), pathWideningRadiusTiles))
-                            {
-                                widened[x, y] = true;
-                                widenedCount++;
-                            }
+                            widened[x, y] = true;
                         }
                     }
-                    isPathTile = widened;
-                    //Debug.Log($"ProceduralTerrainGenerator: Widened paths to {widenedCount} tiles");
                 }
-
-                // Apply progressive path flattening with smooth transitions
-                ApplyProgressivePathFlattening();
-
-                // Apply path smoothing if enabled
-                if (smoothPaths)
-                {
-                    ApplyPathSmoothing();
-                }
-
-                // Final terrain leveling pass for completely flat paths
-                if (useAggressiveFlattening)
-                {
-                    ApplyFinalTerrainLeveling();
-                }
-
-               // Debug.Log($"ProceduralTerrainGenerator: Path processing complete");
+                isPathTile = widened;
             }
 
-            private void ApplyProgressivePathFlattening()
+            // Optional: keep path smoothing to reduce jagged path lines,
+            // but DO NOT modify terrain heights anymore.
+        }
+
+        private void ApplyProgressivePathFlattening()
             {
                 //Debug.Log($"ProceduralTerrainGenerator: Starting aggressive landscape painting flattening");
 
@@ -836,7 +817,35 @@ using UnityEngine;
                 return new Vector3(wx, wy, wz);
             }
 
-            private static IEnumerable<Vector2Int> Neighbors4()
+        // === NEW: path center height helper ===
+        private float GetHeightOfPathCenter(Vector2Int tile)
+        {
+            if (isPathTile[tile.x, tile.y])
+                return heightMap[tile.x, tile.y];
+
+            float minDistance = float.MaxValue;
+            int searchRadius = Mathf.Max(pathWideningRadiusTiles + 2, 5);
+
+            int startX = Mathf.Max(0, tile.x - searchRadius);
+            int endX = Mathf.Min(gridWidth - 1, tile.x + searchRadius);
+            int startY = Mathf.Max(0, tile.y - searchRadius);
+            int endY = Mathf.Min(gridHeight - 1, tile.y + searchRadius);
+
+            for (int y = startY; y <= endY; y++)
+            {
+                for (int x = startX; x <= endX; x++)
+                {
+                    if (isPathTile[x, y])
+                    {
+                        return heightMap[x, y];
+                    }
+                }
+            }
+
+            return minDistance; // fallback
+        }
+
+        private static IEnumerable<Vector2Int> Neighbors4()
             {
                 yield return Vector2Int.right;
                 yield return Vector2Int.left;
