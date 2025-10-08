@@ -9,6 +9,9 @@ namespace CrystalDefenders.Combat
         [SerializeField] private int maxHealth = 100;
         public int MaxHealth => maxHealth;
 
+        [Header("Damage Gating")]
+        [SerializeField] public string requiredDamageTag = null; // if set, only damage with this tag applies
+
         private int currentHealth;
         public int CurrentHealth
         {
@@ -52,6 +55,14 @@ namespace CrystalDefenders.Combat
             if (amount <= 0 || CurrentHealth <= 0) return;
             CurrentHealth -= amount;
             Debug.Log($"{gameObject.name} took {amount} damage, current: {CurrentHealth}/{maxHealth}");
+        }
+
+        public void ApplyDamage(int amount, string damageTag)
+        {
+            if (amount <= 0 || CurrentHealth <= 0) return;
+            if (!string.IsNullOrEmpty(requiredDamageTag) && requiredDamageTag != damageTag) return;
+            CurrentHealth -= amount;
+            Debug.Log($"{gameObject.name} took {amount} damage (tag={damageTag}), current: {CurrentHealth}/{maxHealth}");
         }
 
         public void RestoreFullHealth()

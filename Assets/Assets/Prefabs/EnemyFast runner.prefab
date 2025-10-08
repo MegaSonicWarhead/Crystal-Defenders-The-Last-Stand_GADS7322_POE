@@ -1,0 +1,108 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &7606647612352432211
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1.351372
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.013687611
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      propertyPath: m_Name
+      value: EnemyFast runner
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -4660623083701956757}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -460770738453704065}
+  m_SourcePrefab: {fileID: 100100000, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+--- !u!1 &7300709251999741186 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 3ed0491fae01fda4c942b194e5444dc8, type: 3}
+  m_PrefabInstance: {fileID: 7606647612352432211}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &-4660623083701956757
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7300709251999741186}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76d11f1e40ab63b42a2c0eff0d69b4ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  onDeath:
+    m_PersistentCalls:
+      m_Calls: []
+  onDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  onHealed:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &-460770738453704065
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7300709251999741186}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42b665f248820964ea7261ef3e4a3e0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moveSpeed: 5.5
+  contactDamage: 6
+  attackRange: 4
+  attackCooldown: 0.8

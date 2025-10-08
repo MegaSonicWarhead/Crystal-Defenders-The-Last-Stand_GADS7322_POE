@@ -13,10 +13,22 @@ public class WeaponShop : MonoBehaviour
     [Header("UI References")]
     public TMP_Text resourceText;
     public Button weaponTurretButton;
+    public Button poisonArcherButton;
+    public Button fireMageButton;
     public Button repairButton;
+
+    [Header("Defender Prefabs")]
+    public Defender defaultDefenderPrefab;
+    public Defender poisonArcherPrefab;
+    public Defender fireMagePrefab;
+
+    [Header("Costs")]
+    public int poisonArcherCost = 150;
+    public int fireMageCost = 200;
 
     public static WeaponShop Instance { get; private set; }
     public bool HasDefenderToPlace { get; private set; } = false;
+    public Defender SelectedDefenderPrefab { get; private set; }
 
     private void Awake()
     {
@@ -31,6 +43,8 @@ public class WeaponShop : MonoBehaviour
     private void Start()
     {
         weaponTurretButton.onClick.AddListener(OnWeaponTurretButton);
+        if (poisonArcherButton != null) poisonArcherButton.onClick.AddListener(OnPoisonArcherButton);
+        if (fireMageButton != null) fireMageButton.onClick.AddListener(OnFireMageButton);
         repairButton.onClick.AddListener(OnRepairButton);
     }
 
@@ -46,9 +60,21 @@ public class WeaponShop : MonoBehaviour
 
     private void UpdateButtonStates()
     {
-        // Disable Buy button if not enough resources OR already holding a defender
+        // Disable Buy buttons if not enough resources OR already holding a defender OR no free nodes
+        bool hasFreeNode = HasAnyAvailablePlacementNode();
         weaponTurretButton.interactable =
-            ResourceManager.Instance.CurrentResources >= Defender.Cost && !HasDefenderToPlace;
+            ResourceManager.Instance.CurrentResources >= Defender.Cost && !HasDefenderToPlace && hasFreeNode;
+
+        if (poisonArcherButton != null)
+        {
+            poisonArcherButton.interactable =
+                ResourceManager.Instance.CurrentResources >= poisonArcherCost && !HasDefenderToPlace && hasFreeNode;
+        }
+        if (fireMageButton != null)
+        {
+            fireMageButton.interactable =
+                ResourceManager.Instance.CurrentResources >= fireMageCost && !HasDefenderToPlace && hasFreeNode;
+        }
 
         // Disable Repair button if not enough resources OR no damaged defenders
         bool hasDamaged = Defender.Registry.Any(
@@ -57,10 +83,21 @@ public class WeaponShop : MonoBehaviour
         repairButton.interactable = ResourceManager.Instance.CurrentResources >= Defender.RepairCost && hasDamaged;
     }
 
+    private bool HasAnyAvailablePlacementNode()
+    {
+        var nodes = FindObjectsOfType<PlacementNode>(includeInactive: false);
+        for (int i = 0; i < nodes.Length; i++)
+        {
+            if (nodes[i] != null && nodes[i].IsAvailable) return true;
+        }
+        return false;
+    }
+
     private void OnWeaponTurretButton()
     {
         if (ResourceManager.Instance.Spend(Defender.Cost))
         {
+            SelectedDefenderPrefab = defaultDefenderPrefab;
             HasDefenderToPlace = true;
             Debug.Log("Bought defender! Now click a placement node to place it.");
         }
@@ -70,9 +107,38 @@ public class WeaponShop : MonoBehaviour
         }
     }
 
+    private void OnPoisonArcherButton()
+    {
+        if (ResourceManager.Instance.Spend(poisonArcherCost))
+        {
+            SelectedDefenderPrefab = poisonArcherPrefab;
+            HasDefenderToPlace = true;
+            Debug.Log("Bought Poison Archer! Now click a placement node to place it.");
+        }
+        else
+        {
+            Debug.Log("Not enough resources for a Poison Archer!");
+        }
+    }
+
+    private void OnFireMageButton()
+    {
+        if (ResourceManager.Instance.Spend(fireMageCost))
+        {
+            SelectedDefenderPrefab = fireMagePrefab;
+            HasDefenderToPlace = true;
+            Debug.Log("Bought Fire Mage! Now click a placement node to place it.");
+        }
+        else
+        {
+            Debug.Log("Not enough resources for a Fire Mage!");
+        }
+    }
+
     public void OnDefenderPlaced()
     {
         HasDefenderToPlace = false;
+        SelectedDefenderPrefab = null;
     }
 
     private void OnRepairButton()

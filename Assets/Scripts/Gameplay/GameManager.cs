@@ -12,7 +12,7 @@ namespace CrystalDefenders.Gameplay
         public static GameManager Instance { get; private set; }
 
         [Header("Scene References")] public ProceduralTerrainGenerator terrainGenerator;
-        public EnemySpawner spawnerPrefab; public Enemy enemyPrefab; public Defender defenderPrefab; public Tower towerPrefab;
+        public EnemySpawner spawnerPrefab; public Enemy enemyPrefab; public Enemy enemyFastPrefab; public Enemy enemyRangedPrefab; public Defender defenderPrefab; public Tower towerPrefab;
         public DefenderPlacementManager placementManager;
 
         public Transform Tower { get; private set; }
@@ -54,6 +54,7 @@ namespace CrystalDefenders.Gameplay
             DecoratePathVisuals();
 
             // Start wave system
+            // Optionally configure wave rules with variants present in scene/prefabs via inspector
             WaveManager.Instance.StartNextWave();
         }
 

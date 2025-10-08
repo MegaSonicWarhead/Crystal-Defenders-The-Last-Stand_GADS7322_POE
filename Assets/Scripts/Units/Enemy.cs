@@ -19,6 +19,7 @@ namespace CrystalDefenders.Units
         private float lastAttackTime = -999f;
 
         private Health health;
+        private bool isDead = false;
 
         private void Awake()
         {
@@ -43,6 +44,12 @@ namespace CrystalDefenders.Units
         {
             MoveAlongPath();
             TryAttackTargets();
+
+			// Safety: ensure death triggers if health hits zero for any reason
+			if (!isDead && health != null && health.CurrentHealth <= 0)
+			{
+				OnDeath();
+			}
         }
 
         public void SetPath(IList<Vector3> worldWaypoints)
@@ -138,6 +145,8 @@ namespace CrystalDefenders.Units
 
         public void OnDeath()
         {
+            if (isDead) return;
+            isDead = true;
             ResourceManager.Instance?.AddResources(25);
             WaveManager.Instance?.OnEnemyDied();
             //Debug.Log($"Enemy {gameObject.name} died");
