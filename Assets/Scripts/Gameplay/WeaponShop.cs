@@ -55,6 +55,12 @@ public class WeaponShop : MonoBehaviour
             resourceText.text = $"Resources: {ResourceManager.Instance.CurrentResources}";
         }
 
+        // Allow user to cancel placement with Escape or Right-Click
+        if (HasDefenderToPlace && (Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(1)))
+        {
+            CancelPlacement();
+        }
+
         UpdateButtonStates();
     }
 
@@ -95,6 +101,19 @@ public class WeaponShop : MonoBehaviour
 
     private void OnWeaponTurretButton()
     {
+        // Toggle selection if already holding same type
+        if (HasDefenderToPlace && SelectedDefenderPrefab == defaultDefenderPrefab)
+        {
+            CancelPlacement();
+            return;
+        }
+
+        if (!HasAnyAvailablePlacementNode())
+        {
+            Debug.Log("No available placement nodes.");
+            return;
+        }
+
         if (ResourceManager.Instance.Spend(Defender.Cost))
         {
             SelectedDefenderPrefab = defaultDefenderPrefab;
@@ -109,6 +128,18 @@ public class WeaponShop : MonoBehaviour
 
     private void OnPoisonArcherButton()
     {
+        if (HasDefenderToPlace && SelectedDefenderPrefab == poisonArcherPrefab)
+        {
+            CancelPlacement();
+            return;
+        }
+
+        if (!HasAnyAvailablePlacementNode())
+        {
+            Debug.Log("No available placement nodes.");
+            return;
+        }
+
         if (ResourceManager.Instance.Spend(poisonArcherCost))
         {
             SelectedDefenderPrefab = poisonArcherPrefab;
@@ -123,6 +154,18 @@ public class WeaponShop : MonoBehaviour
 
     private void OnFireMageButton()
     {
+        if (HasDefenderToPlace && SelectedDefenderPrefab == fireMagePrefab)
+        {
+            CancelPlacement();
+            return;
+        }
+
+        if (!HasAnyAvailablePlacementNode())
+        {
+            Debug.Log("No available placement nodes.");
+            return;
+        }
+
         if (ResourceManager.Instance.Spend(fireMageCost))
         {
             SelectedDefenderPrefab = fireMagePrefab;
@@ -139,6 +182,13 @@ public class WeaponShop : MonoBehaviour
     {
         HasDefenderToPlace = false;
         SelectedDefenderPrefab = null;
+    }
+
+    private void CancelPlacement()
+    {
+        HasDefenderToPlace = false;
+        SelectedDefenderPrefab = null;
+        Debug.Log("Placement cancelled.");
     }
 
     private void OnRepairButton()
