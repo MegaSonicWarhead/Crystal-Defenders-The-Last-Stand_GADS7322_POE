@@ -15,6 +15,11 @@ namespace CrystalDefenders.Combat
 		private float travelTime;
 		private float elapsed;
 
+		private void Awake()
+		{
+			damageTag = "fire"; // Set damage tag at runtime
+		}
+
 		private void Reset()
 		{
 			damageTag = "fire";

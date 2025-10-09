@@ -105,6 +105,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d555676e28f7c3240bc3332258bd6f7e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5238526756412524230}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d555676e28f7c3240bc3332258bd6f7e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9051649788162879250}
   m_SourcePrefab: {fileID: 100100000, guid: d555676e28f7c3240bc3332258bd6f7e, type: 3}
 --- !u!1 &1632623748777145245 stripped
 GameObject:
@@ -123,7 +126,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 76d11f1e40ab63b42a2c0eff0d69b4ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 100
+  maxHealth: 200
+  requiredDamageTag: 
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -179,6 +183,20 @@ MonoBehaviour:
   range: 6
   shotsPerSecond: 1.8
   damagePerHit: 10
+--- !u!114 &9051649788162879250
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1632623748777145245}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 090c4a42954cc8f49a6951a6d8da355d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  snapProbeHeight: 5
+  snapProbeDistance: 50
 --- !u!4 &2153826777272297767 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: d555676e28f7c3240bc3332258bd6f7e, type: 3}

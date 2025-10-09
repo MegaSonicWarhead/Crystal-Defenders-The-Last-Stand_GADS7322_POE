@@ -20,8 +20,7 @@ namespace CrystalDefenders.Units
 		private new void Update()
 		{
 			// Move toward tower but also uses AutoAttack to shoot
-			base.GetType(); // no-op to avoid warnings
-			base.SendMessage("MoveAlongPath", SendMessageOptions.DontRequireReceiver);
+			base.Update(); // Call base Update to handle death checks and other logic
 			// Enemy base TryAttackTargets will handle contact; ranged attacks handled by AutoAttack
 		}
 	}

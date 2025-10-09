@@ -47,6 +47,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 100
+  requiredDamageTag: 
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -68,8 +69,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41f1a8f87742da44bbc4093300afdfc9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 3
-  contactDamage: 10
+  moveSpeed: 1
+  contactDamage: 5
   attackRange: 5
   attackCooldown: 1
 --- !u!1001 &133480579275785386

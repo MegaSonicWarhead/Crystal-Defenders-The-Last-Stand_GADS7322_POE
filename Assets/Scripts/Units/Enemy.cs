@@ -40,7 +40,7 @@ namespace CrystalDefenders.Units
             //Debug.Log($"Enemy Disabled: {gameObject.name}");
         }
 
-        private void Update()
+        public void Update()
         {
             MoveAlongPath();
             TryAttackTargets();

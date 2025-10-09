@@ -55,9 +55,15 @@ namespace CrystalDefenders.Combat
         {
             Enemy best = null;
             float bestD = float.MaxValue;
+            string towerDamageTag = GetTowerDamageTag();
+            
             foreach (var e in EnemyRegistry.Enemies)
             {
                 if (e == null) continue;
+                
+                // Check if this tower can damage this enemy
+                if (!CanDamageEnemy(e, towerDamageTag)) continue;
+                
                 float d = Vector3.Distance(transform.position, e.transform.position);
                 if (d < range && d < bestD)
                 {
@@ -66,6 +72,35 @@ namespace CrystalDefenders.Combat
                 }
             }
             return best;
+        }
+
+        private string GetTowerDamageTag()
+        {
+            if (projectilePrefab == null) return null;
+            
+            // Check what type of projectile this tower uses
+            var poisonArrow = projectilePrefab.GetComponent<PoisonArrowProjectile>();
+            if (poisonArrow != null) return "poison";
+            
+            var fireball = projectilePrefab.GetComponent<FireballAoEProjectile>();
+            if (fireball != null) return "fire";
+            
+            // Regular projectiles don't have damage tags
+            return null;
+        }
+
+        private bool CanDamageEnemy(Enemy enemy, string towerDamageTag)
+        {
+            var enemyHealth = enemy.GetComponent<Health>();
+            if (enemyHealth == null) return true; // No health component means can damage
+            
+            string enemyRequiredTag = enemyHealth.requiredDamageTag;
+            
+            // If enemy has no damage requirement, any damage works
+            if (string.IsNullOrEmpty(enemyRequiredTag)) return true;
+            
+            // If enemy requires specific damage, tower must provide that damage
+            return enemyRequiredTag == towerDamageTag;
         }
     }
 }

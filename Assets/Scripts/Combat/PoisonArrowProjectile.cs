@@ -9,6 +9,11 @@ namespace CrystalDefenders.Combat
 		[SerializeField] private float poisonTickInterval = 0.5f;
 		[SerializeField] private float poisonDuration = 4f;
 
+		private void Awake()
+		{
+			damageTag = "poison"; // Set damage tag at runtime
+		}
+
 		private void Reset()
 		{
 			damageTag = "poison";
