@@ -10,7 +10,8 @@ namespace CrystalDefenders.Combat
         public int MaxHealth => maxHealth;
 
         [Header("Damage Gating")]
-        [SerializeField] public string requiredDamageTag = null; // if set, only damage with this tag applies
+        [Tooltip("If empty or null, all damage is accepted")]
+        [SerializeField] public string requiredDamageTag = null; // e.g., "poison" or "fire"
 
         private int currentHealth;
         public int CurrentHealth
@@ -40,16 +41,15 @@ namespace CrystalDefenders.Combat
         private void Awake()
         {
             CurrentHealth = maxHealth;
-            //Debug.Log($"{gameObject.name} Health Awake: {CurrentHealth}/{maxHealth}");
         }
 
         public void SetMaxHealth(int value, bool fill = true)
         {
             maxHealth = Mathf.Max(1, value);
             if (fill) CurrentHealth = maxHealth;
-            //Debug.Log($"{gameObject.name} SetMaxHealth: {CurrentHealth}/{maxHealth}");
         }
 
+        /// <summary>Apply damage ignoring tags (useful for "any damage")</summary>
         public void ApplyDamage(int amount)
         {
             if (amount <= 0 || CurrentHealth <= 0) return;
@@ -57,12 +57,22 @@ namespace CrystalDefenders.Combat
             Debug.Log($"{gameObject.name} took {amount} damage, current: {CurrentHealth}/{maxHealth}");
         }
 
+        /// <summary>Apply damage with a tag, respects requiredDamageTag if set</summary>
         public void ApplyDamage(int amount, string damageTag)
         {
             if (amount <= 0 || CurrentHealth <= 0) return;
-            if (!string.IsNullOrEmpty(requiredDamageTag) && requiredDamageTag != damageTag) return;
+
+            // Check tag gating
+            if (!string.IsNullOrEmpty(requiredDamageTag) &&
+                !string.Equals(requiredDamageTag, damageTag, System.StringComparison.OrdinalIgnoreCase))
+            {
+                Debug.Log($"[Health] {gameObject.name} ignored {amount} damage (tag={damageTag}) | requiredTag={requiredDamageTag}");
+                return;
+            }
+
             CurrentHealth -= amount;
-            Debug.Log($"{gameObject.name} took {amount} damage (tag={damageTag}), current: {CurrentHealth}/{maxHealth}");
+
+            Debug.Log($"[Health] {gameObject.name} took {amount} damage (tag={damageTag}) | current: {CurrentHealth}/{MaxHealth}");
         }
 
         public void RestoreFullHealth()
@@ -74,9 +84,7 @@ namespace CrystalDefenders.Combat
         {
             if (amount <= 0 || CurrentHealth <= 0) return;
             CurrentHealth += amount;
-            //Debug.Log($"{gameObject.name} healed, current: {CurrentHealth}/{maxHealth}");
+            Debug.Log($"{gameObject.name} healed {amount}, current: {CurrentHealth}/{maxHealth}");
         }
     }
 }
-
-

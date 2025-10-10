@@ -16,7 +16,7 @@ namespace CrystalDefenders.Units
 
         private readonly List<Vector3> waypoints = new List<Vector3>();
         private int currentWpIndex = 0;
-        private float lastAttackTime = -999f;
+        public float lastAttackTime = -999f;
 
         private Health health;
         private bool isDead = false;

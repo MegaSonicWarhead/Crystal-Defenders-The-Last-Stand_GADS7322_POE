@@ -95,10 +95,10 @@ PrefabInstance:
       addedObject: {fileID: -6597864865906742251}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c577be2e6fc45604faf358cf3dea1c32, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -3591359773156854588}
+      addedObject: {fileID: 352624715433351310}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c577be2e6fc45604faf358cf3dea1c32, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 352624715433351310}
+      addedObject: {fileID: -2317719300547145153}
   m_SourcePrefab: {fileID: 100100000, guid: c577be2e6fc45604faf358cf3dea1c32, type: 3}
 --- !u!4 &4785091672856756489 stripped
 Transform:
@@ -123,7 +123,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 100
-  requiredDamageTag: 
+  requiredDamageTag: fire
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -133,23 +133,6 @@ MonoBehaviour:
   onHealed:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &-3591359773156854588
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5270301363538942899}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a9b16579c8cb6d54dab686365ef5cf59, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  range: 5
-  shotsPerSecond: 2
-  damagePerHit: 15
-  projectilePrefab: {fileID: 7679587348817631104, guid: de28d050e0a1ef0409b234723cada247, type: 3}
-  firePoint: {fileID: 8994840100665566912}
 --- !u!114 &352624715433351310
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -166,3 +149,29 @@ MonoBehaviour:
   contactDamage: 10
   attackRange: 5
   attackCooldown: 1
+  lastAttackTime: -999
+  projectilePrefab: {fileID: 7679587348817631104, guid: de28d050e0a1ef0409b234723cada247, type: 3}
+  projectileSpeed: 10
+  projectileDamage: 8
+  projectileDamageTag: 
+--- !u!65 &-2317719300547145153
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5270301363538942899}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.94938236, y: 0.59233326, z: 0.9499999}
+  m_Center: {x: 0, y: 0.29616663, z: 0}

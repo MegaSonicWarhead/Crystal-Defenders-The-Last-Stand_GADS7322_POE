@@ -127,7 +127,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 200
-  requiredDamageTag: 
+  requiredDamageTag: poison
   onDeath:
     m_PersistentCalls:
       m_Calls: []

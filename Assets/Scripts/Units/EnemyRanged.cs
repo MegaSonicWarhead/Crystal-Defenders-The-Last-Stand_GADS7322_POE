@@ -3,27 +3,93 @@ using UnityEngine;
 
 namespace CrystalDefenders.Units
 {
-	[RequireComponent(typeof(Health))]
-	[RequireComponent(typeof(AutoAttack))]
-	public class EnemyRanged : Enemy
-	{
-		private void Awake()
-		{
-			var aa = GetComponent<AutoAttack>();
-			aa.range = 6.5f;
-			aa.shotsPerSecond = 0.8f;
-			aa.damagePerHit = 8;
-			var h = GetComponent<Health>();
-			h.requiredDamageTag = "fire"; // only fire damages this enemy
-		}
+    [RequireComponent(typeof(Health))]
+    public class EnemyRanged : Enemy
+    {
+        [Header("Ranged Attack Settings")]
+        public GameObject projectilePrefab;
+        public float projectileSpeed = 10f;
+        public int projectileDamage = 8;
+        public string projectileDamageTag = "fire"; // tag assigned to projectile
 
-		private new void Update()
-		{
-			// Move toward tower but also uses AutoAttack to shoot
-			base.Update(); // Call base Update to handle death checks and other logic
-			// Enemy base TryAttackTargets will handle contact; ranged attacks handled by AutoAttack
-		}
-	}
+        private void Awake()
+        {
+            var h = GetComponent<Health>();
+            h.requiredDamageTag = "fire"; // only fire damages this enemy
+
+            // Subscribe to death event
+            h.onDeath.AddListener(OnDeath);
+        }
+
+        private void OnDeath()
+        {
+            // Destroy the enemy
+            Destroy(gameObject);
+        }
+
+        private new void Update()
+        {
+            base.Update();
+            TryAttackTargets();
+        }
+
+        private void TryAttackTargets()
+        {
+            if (Time.time - lastAttackTime < attackCooldown) return;
+
+            var closestTarget = GetClosestDamageable();
+            if (closestTarget == null) return;
+
+            if (Vector3.Distance(transform.position, closestTarget.transform.position) <= attackRange)
+            {
+                ShootProjectileAt(closestTarget);
+                lastAttackTime = Time.time;
+            }
+        }
+
+        private void ShootProjectileAt(GameObject target)
+        {
+            if (projectilePrefab == null) return;
+
+            GameObject proj = Instantiate(projectilePrefab, transform.position, Quaternion.identity);
+            Projectile projectile = proj.GetComponent<Projectile>();
+            if (projectile != null)
+            {
+                projectile.damage = projectileDamage;
+                projectile.damageTag = projectileDamageTag; // <--- Assign tag
+                projectile.target = target.transform;
+                projectile.speed = projectileSpeed;
+            }
+        }
+
+        private GameObject GetClosestDamageable()
+        {
+            GameObject best = null;
+            float bestDistance = float.MaxValue;
+
+            var gm = Gameplay.GameManager.Instance;
+            if (gm != null && gm.Tower != null)
+            {
+                float dt = Vector3.Distance(transform.position, gm.Tower.position);
+                if (dt < bestDistance)
+                {
+                    bestDistance = dt;
+                    best = gm.Tower.gameObject;
+                }
+            }
+
+            foreach (var def in Defender.Registry)
+            {
+                if (def == null) continue;
+                float dd = Vector3.Distance(transform.position, def.transform.position);
+                if (dd < bestDistance)
+                {
+                    bestDistance = dd;
+                    best = def.gameObject;
+                }
+            }
+
+            return best;
+        }
+    }
 }
-
-
