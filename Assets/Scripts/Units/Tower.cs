@@ -11,7 +11,12 @@ namespace CrystalDefenders.Units
         private Health health;
 
         [Header("UI Panel")]
-        public TMP_Text healthText; // Assign in your UI panel
+        public TMP_Text healthText;
+
+        [Header("Projectile Prefabs")]
+        public GameObject fireProjectile;
+        public GameObject poisonProjectile;
+        public GameObject regularProjectile;
 
         private void Awake()
         {
@@ -24,9 +29,35 @@ namespace CrystalDefenders.Units
             aa.shotsPerSecond = 1.5f;
             aa.damagePerHit = 20;
 
+            // Hook into AutoAttack to select correct projectile
+            aa.OnBeforeShoot = SelectProjectileBasedOnEnemy;
+
             // Track this tower in the UI panel
             if (UIManager.Instance != null)
                 UIManager.Instance.TrackTower(this);
+        }
+
+        private void SelectProjectileBasedOnEnemy()
+        {
+            var aa = GetComponent<AutoAttack>();
+            var target = aa.GetCurrentTarget();
+            if (target == null) return;
+
+            var enemyHealth = target.GetComponent<Health>();
+            if (enemyHealth == null) return;
+
+            switch (enemyHealth.requiredDamageTag)
+            {
+                case "fire":
+                    aa.SetProjectilePrefab(fireProjectile);
+                    break;
+                case "poison":
+                    aa.SetProjectilePrefab(poisonProjectile);
+                    break;
+                default:
+                    aa.SetProjectilePrefab(regularProjectile);
+                    break;
+            }
         }
 
         private void UpdateHealthUI(int _)
@@ -42,12 +73,8 @@ namespace CrystalDefenders.Units
             Debug.Log($"Tower {gameObject.name} destroyed");
             Gameplay.GameManager.Instance?.OnTowerDestroyed();
 
-            // Optionally clear UI
             if (healthText != null)
                 healthText.text = "Tower Destroyed";
         }
     }
 }
-
-
-

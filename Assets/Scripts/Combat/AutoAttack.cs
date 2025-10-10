@@ -1,5 +1,6 @@
 using UnityEngine;
 using CrystalDefenders.Units;
+using System;
 
 namespace CrystalDefenders.Combat
 {
@@ -16,6 +17,9 @@ namespace CrystalDefenders.Combat
         [SerializeField] private Transform firePoint; // Empty child as muzzle
 
         private float lastShotTime = -999f;
+        private Enemy currentTarget;
+
+        public Action OnBeforeShoot; // Hook for Tower to choose projectile dynamically
 
         private void Update()
         {
@@ -28,11 +32,14 @@ namespace CrystalDefenders.Combat
             float cooldown = 1f / Mathf.Max(0.01f, shotsPerSecond);
             if (now - lastShotTime < cooldown) return;
 
-            Enemy target = FindNearestEnemyInRange();
-            if (target == null) return;
+            currentTarget = FindNearestEnemyInRange();
+            if (currentTarget == null) return;
 
-            // Spawn a projectile instead of applying instant damage
-            ShootProjectile(target);
+            // Allow Tower to select proper projectile
+            OnBeforeShoot?.Invoke();
+
+            // Spawn projectile
+            ShootProjectile(currentTarget);
 
             lastShotTime = now;
         }
@@ -56,14 +63,13 @@ namespace CrystalDefenders.Combat
             Enemy best = null;
             float bestD = float.MaxValue;
             string towerDamageTag = GetTowerDamageTag();
-            
+
             foreach (var e in EnemyRegistry.Enemies)
             {
                 if (e == null) continue;
-                
-                // Check if this tower can damage this enemy
+
                 if (!CanDamageEnemy(e, towerDamageTag)) continue;
-                
+
                 float d = Vector3.Distance(transform.position, e.transform.position);
                 if (d < range && d < bestD)
                 {
@@ -77,32 +83,25 @@ namespace CrystalDefenders.Combat
         private string GetTowerDamageTag()
         {
             if (projectilePrefab == null) return null;
-            
-            // Check what type of projectile this tower uses
-            var poisonArrow = projectilePrefab.GetComponent<PoisonArrowProjectile>();
-            if (poisonArrow != null) return "poison";
-            
-            var fireball = projectilePrefab.GetComponent<FireballAoEProjectile>();
-            if (fireball != null) return "fire";
-            
-            // Regular projectiles don't have damage tags
+
+            if (projectilePrefab.GetComponent<PoisonArrowProjectile>() != null) return "poison";
+            if (projectilePrefab.GetComponent<FireballAoEProjectile>() != null) return "fire";
             return null;
         }
 
         private bool CanDamageEnemy(Enemy enemy, string towerDamageTag)
         {
             var enemyHealth = enemy.GetComponent<Health>();
-            if (enemyHealth == null) return true; // No health component means can damage
-            
+            if (enemyHealth == null) return true;
+
             string enemyRequiredTag = enemyHealth.requiredDamageTag;
-            
-            // If enemy has no damage requirement, any damage works
             if (string.IsNullOrEmpty(enemyRequiredTag)) return true;
-            
-            // If enemy requires specific damage, tower must provide that damage
+
             return enemyRequiredTag == towerDamageTag;
         }
+
+        public void SetProjectilePrefab(GameObject prefab) => projectilePrefab = prefab;
+        public Transform GetFirePoint() => firePoint;
+        public Enemy GetCurrentTarget() => currentTarget;
     }
 }
-
-
