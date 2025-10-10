@@ -120,9 +120,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   healthText: {fileID: 0}
-  fireProjectile: {fileID: 9110182175213742145, guid: fb7788a97afa5ec468e21fba3fc6f969, type: 3}
-  poisonProjectile: {fileID: 1129919539216660917, guid: 0aeb466f425bbdb4aa5fb884ce460dcb, type: 3}
-  regularProjectile: {fileID: 7679587348817631104, guid: de28d050e0a1ef0409b234723cada247, type: 3}
 --- !u!1001 &6272601874820764
 PrefabInstance:
   m_ObjectHideFlags: 0
