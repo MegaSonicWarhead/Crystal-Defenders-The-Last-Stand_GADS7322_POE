@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using CrystalDefenders.Combat;
 
@@ -14,7 +14,9 @@ namespace CrystalDefenders.Units
         [Header("Placement Settings")]
         [SerializeField] private GameObject placementNodePrefab; // Assign in Inspector
 
-        private Health health;
+        protected Health health; // ✅ Made protected: allows subclass towers (Fire/Poison) to modify health
+        private AutoAttack autoAttack; // ✅ Cache for possible upgrade modifiers
+
         private static readonly List<Defender> registry = new List<Defender>();
         public static IReadOnlyList<Defender> Registry => registry;
 
@@ -23,16 +25,21 @@ namespace CrystalDefenders.Units
             health = GetComponent<Health>();
             health.SetMaxHealth(200, true);
 
-            var aa = GetComponent<AutoAttack>();
-            aa.range = 5f;
-            aa.shotsPerSecond = 2f;
-            aa.damagePerHit = 15;
+            autoAttack = GetComponent<AutoAttack>();
+            ConfigureBaseStats();
 
             if (UIManager.Instance != null)
                 UIManager.Instance.AttachHealthBar(health);
 
-            // Subscribe to death event
             health.onDeath.AddListener(OnDefenderDestroyed);
+        }
+
+        /// ✅ Central place to define default defender stats (clean for subclasses to override)
+        protected virtual void ConfigureBaseStats()
+        {
+            autoAttack.range = 5f;
+            autoAttack.shotsPerSecond = 2f;
+            autoAttack.damagePerHit = 15;
         }
 
         private void OnEnable()
@@ -65,18 +72,14 @@ namespace CrystalDefenders.Units
         }
 
         // --- Handle Defender destruction ---
-        private void OnDefenderDestroyed()
+        protected virtual void OnDefenderDestroyed()
         {
             Debug.Log($"{gameObject.name} destroyed! Replacing with placement node.");
 
             if (placementNodePrefab != null)
-            {
                 Instantiate(placementNodePrefab, transform.position, Quaternion.identity);
-            }
 
             Destroy(gameObject);
         }
     }
 }
-
-

@@ -73,6 +73,7 @@ MonoBehaviour:
   contactDamage: 5
   attackRange: 5
   attackCooldown: 1
+  lastAttackTime: -999
 --- !u!1001 &133480579275785386
 PrefabInstance:
   m_ObjectHideFlags: 0

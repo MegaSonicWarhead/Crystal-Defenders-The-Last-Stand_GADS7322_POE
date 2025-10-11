@@ -41,8 +41,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1793585010946320288}
   - component: {fileID: 8120700862837633968}
-  - component: {fileID: 7546226667899451708}
   - component: {fileID: 6511282870019766541}
+  - component: {fileID: -6575941860209541164}
   m_Layer: 0
   m_Name: Tower_Base
   m_TagString: Untagged
@@ -90,23 +90,6 @@ MonoBehaviour:
   onHealed:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &7546226667899451708
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4789343627766991954}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a9b16579c8cb6d54dab686365ef5cf59, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  range: 5
-  shotsPerSecond: 2
-  damagePerHit: 15
-  projectilePrefab: {fileID: 7679587348817631104, guid: de28d050e0a1ef0409b234723cada247, type: 3}
-  firePoint: {fileID: 8495566037363484323}
 --- !u!114 &6511282870019766541
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -120,6 +103,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   healthText: {fileID: 0}
+--- !u!114 &-6575941860209541164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4789343627766991954}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0cba5f68826cc2448b935b1ba9ef5d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  range: 6
+  shotsPerSecond: 1.5
+  baseDamage: 15
+  damageMultiplier: 0.5
+  defaultProjectile: {fileID: 7679587348817631104, guid: de28d050e0a1ef0409b234723cada247, type: 3}
+  fireProjectile: {fileID: 9110182175213742145, guid: fb7788a97afa5ec468e21fba3fc6f969, type: 3}
+  poisonProjectile: {fileID: 1129919539216660917, guid: 0aeb466f425bbdb4aa5fb884ce460dcb, type: 3}
+  firePoint: {fileID: 8495566037363484323}
+  debugLogs: 1
 --- !u!1001 &6272601874820764
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using CrystalDefenders.Units;
 
 namespace CrystalDefenders.Combat
@@ -16,6 +16,13 @@ namespace CrystalDefenders.Combat
         [SerializeField] private Transform firePoint; // Empty child as muzzle
 
         private float lastShotTime = -999f;
+        private string cachedDamageTag; // ✅ Cache to avoid GetComponent every frame
+
+        private void Awake()
+        {
+            // ✅ Cache damage tag on startup for performance
+            cachedDamageTag = DetectDamageTagFromProjectile();
+        }
 
         private void Update()
         {
@@ -31,9 +38,7 @@ namespace CrystalDefenders.Combat
             Enemy target = FindNearestEnemyInRange();
             if (target == null) return;
 
-            // Spawn a projectile instead of applying instant damage
             ShootProjectile(target);
-
             lastShotTime = now;
         }
 
@@ -48,22 +53,22 @@ namespace CrystalDefenders.Combat
                 p.Initialize(target.transform, damagePerHit);
             }
 
-            Debug.Log($"{gameObject.name} fired a projectile at {target.name}");
+            // Optional debug
+            // Debug.Log($"{gameObject.name} fired a projectile at {target.name}");
         }
 
         private Enemy FindNearestEnemyInRange()
         {
             Enemy best = null;
             float bestD = float.MaxValue;
-            string towerDamageTag = GetTowerDamageTag();
-            
+
             foreach (var e in EnemyRegistry.Enemies)
             {
                 if (e == null) continue;
-                
-                // Check if this tower can damage this enemy
-                if (!CanDamageEnemy(e, towerDamageTag)) continue;
-                
+
+                // ✅ Smart targeting: Only shoot enemies this tower can actually damage
+                if (!CanDamageEnemy(e, cachedDamageTag)) continue;
+
                 float d = Vector3.Distance(transform.position, e.transform.position);
                 if (d < range && d < bestD)
                 {
@@ -74,35 +79,39 @@ namespace CrystalDefenders.Combat
             return best;
         }
 
-        private string GetTowerDamageTag()
+        // ✅ Fast detection of what type of damage this projectile applies
+        private string DetectDamageTagFromProjectile()
         {
             if (projectilePrefab == null) return null;
-            
-            // Check what type of projectile this tower uses
-            var poisonArrow = projectilePrefab.GetComponent<PoisonArrowProjectile>();
-            if (poisonArrow != null) return "poison";
-            
-            var fireball = projectilePrefab.GetComponent<FireballAoEProjectile>();
-            if (fireball != null) return "fire";
-            
-            // Regular projectiles don't have damage tags
+
+            if (projectilePrefab.GetComponent<PoisonArrowProjectile>() != null) return "poison";
+            if (projectilePrefab.GetComponent<FireballAoEProjectile>() != null) return "fire";
+
+            // Default projectile (normal damage)
             return null;
         }
 
+        // ✅ Checks if this projectile can hurt the enemy based on `requiredDamageTag`
         private bool CanDamageEnemy(Enemy enemy, string towerDamageTag)
         {
             var enemyHealth = enemy.GetComponent<Health>();
-            if (enemyHealth == null) return true; // No health component means can damage
-            
+            if (enemyHealth == null) return true;
+
             string enemyRequiredTag = enemyHealth.requiredDamageTag;
-            
-            // If enemy has no damage requirement, any damage works
-            if (string.IsNullOrEmpty(enemyRequiredTag)) return true;
-            
-            // If enemy requires specific damage, tower must provide that damage
+
+            // --- Default projectile logic ---
+            if (string.IsNullOrEmpty(towerDamageTag))
+            {
+                // Default projectile should only hit enemies with NO tag
+                return string.IsNullOrEmpty(enemyRequiredTag);
+            }
+
+            // --- Special projectiles (fire / poison) ---
+            if (string.IsNullOrEmpty(enemyRequiredTag))
+                return false; // Don't hit tagless enemies with fire/poison
+
+            // --- Only hit if tags match ---
             return enemyRequiredTag == towerDamageTag;
         }
     }
 }
-
-

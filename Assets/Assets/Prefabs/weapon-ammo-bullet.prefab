@@ -78,3 +78,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 12
+  damage: 15
+  target: {fileID: 0}
+  damageTag: 

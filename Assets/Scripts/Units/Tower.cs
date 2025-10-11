@@ -1,11 +1,11 @@
-using CrystalDefenders.Combat;
+﻿using CrystalDefenders.Combat;
 using TMPro;
 using UnityEngine;
 
 namespace CrystalDefenders.Units
 {
     [RequireComponent(typeof(Health))]
-    [RequireComponent(typeof(AutoAttack))]
+    [RequireComponent(typeof(AutoAttackBaseTower))] // ✅ Use BaseTower attack script
     public class Tower : MonoBehaviour
     {
         private Health health;
@@ -19,14 +19,23 @@ namespace CrystalDefenders.Units
             health.SetMaxHealth(1000, true);
             health.onDeath.AddListener(OnTowerDestroyed);
 
-            var aa = GetComponent<AutoAttack>();
+            // ✅ Subscribe to damage/heal events to update UI
+            health.onDamaged.AddListener(UpdateHealthUI);
+            health.onHealed.AddListener(UpdateHealthUI);
+
+            // Configure the BaseTower attack script
+            var aa = GetComponent<AutoAttackBaseTower>();
             aa.range = 6f;
             aa.shotsPerSecond = 1.5f;
-            aa.damagePerHit = 20;
+            aa.baseDamage = 20;       // Base damage before multiplier
+            aa.damageMultiplier = 0.5f; // 50% damage output
 
             // Track this tower in the UI panel
             if (UIManager.Instance != null)
                 UIManager.Instance.TrackTower(this);
+
+            // Update UI at start
+            UpdateHealthUI(0);
         }
 
         private void UpdateHealthUI(int _)
@@ -48,6 +57,3 @@ namespace CrystalDefenders.Units
         }
     }
 }
-
-
-
