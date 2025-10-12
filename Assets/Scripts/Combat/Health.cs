@@ -54,7 +54,7 @@ namespace CrystalDefenders.Combat
         {
             if (amount <= 0 || CurrentHealth <= 0) return;
             CurrentHealth -= amount;
-            Debug.Log($"{gameObject.name} took {amount} damage, current: {CurrentHealth}/{maxHealth}");
+            //Debug.Log($"{gameObject.name} took {amount} damage, current: {CurrentHealth}/{maxHealth}");
         }
 
         /// <summary>Apply damage with a tag, respects requiredDamageTag if set</summary>
@@ -66,13 +66,13 @@ namespace CrystalDefenders.Combat
             if (!string.IsNullOrEmpty(requiredDamageTag) &&
                 !string.Equals(requiredDamageTag, damageTag, System.StringComparison.OrdinalIgnoreCase))
             {
-                Debug.Log($"[Health] {gameObject.name} ignored {amount} damage (tag={damageTag}) | requiredTag={requiredDamageTag}");
+                //Debug.Log($"[Health] {gameObject.name} ignored {amount} damage (tag={damageTag}) | requiredTag={requiredDamageTag}");
                 return;
             }
 
             CurrentHealth -= amount;
 
-            Debug.Log($"[Health] {gameObject.name} took {amount} damage (tag={damageTag}) | current: {CurrentHealth}/{MaxHealth}");
+            //Debug.Log($"[Health] {gameObject.name} took {amount} damage (tag={damageTag}) | current: {CurrentHealth}/{MaxHealth}");
         }
 
         public void RestoreFullHealth()
@@ -84,7 +84,7 @@ namespace CrystalDefenders.Combat
         {
             if (amount <= 0 || CurrentHealth <= 0) return;
             CurrentHealth += amount;
-            Debug.Log($"{gameObject.name} healed {amount}, current: {CurrentHealth}/{maxHealth}");
+            //Debug.Log($"{gameObject.name} healed {amount}, current: {CurrentHealth}/{maxHealth}");
         }
     }
 }

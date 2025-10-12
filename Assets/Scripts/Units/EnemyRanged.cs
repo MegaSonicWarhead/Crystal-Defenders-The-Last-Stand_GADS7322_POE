@@ -1,5 +1,6 @@
 using CrystalDefenders.Combat;
 using UnityEngine;
+using CrystalDefenders.Gameplay;
 
 namespace CrystalDefenders.Units
 {
@@ -25,6 +26,7 @@ namespace CrystalDefenders.Units
         {
             // Destroy the enemy
             Destroy(gameObject);
+            WaveManager.Instance?.OnEnemyDied();
         }
 
         private new void Update()

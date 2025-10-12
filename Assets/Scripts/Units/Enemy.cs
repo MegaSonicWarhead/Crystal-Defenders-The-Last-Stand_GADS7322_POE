@@ -93,7 +93,7 @@ namespace CrystalDefenders.Units
 
         private void TryAttackTargets()
         {
-            Debug.Log("jy is vet");
+            //Debug.Log("jy is vet");
             float now = Time.time;
             if (now - lastAttackTime < attackCooldown) return;
 
@@ -104,13 +104,13 @@ namespace CrystalDefenders.Units
             if (d <= attackRange)
             {
                 var h = closestTarget.GetComponent<Health>();
-                Debug.Log("jy is vet2");
+               // Debug.Log("jy is vet2");
                 if (h != null)
                 {
-                    Debug.Log("jy is vet3");
+                    //Debug.Log("jy is vet3");
                     h.ApplyDamage(contactDamage);
                     lastAttackTime = now;
-                    Debug.Log($"Enemy {gameObject.name} attacked {closestTarget.name} for {contactDamage} damage");
+                    //Debug.Log($"Enemy {gameObject.name} attacked {closestTarget.name} for {contactDamage} damage");
                 }
             }
         }

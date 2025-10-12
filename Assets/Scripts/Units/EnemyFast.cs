@@ -1,5 +1,6 @@
 using CrystalDefenders.Combat;
 using UnityEngine;
+using CrystalDefenders.Gameplay;
 
 namespace CrystalDefenders.Units
 {
@@ -18,6 +19,7 @@ namespace CrystalDefenders.Units
         private void OnDeath()
         {
             Destroy(gameObject); // or play death animation before destroying
+            WaveManager.Instance?.OnEnemyDied();
         }
 
         private void Reset()

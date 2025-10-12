@@ -1,4 +1,4 @@
-using CrystalDefenders.Combat;
+﻿using CrystalDefenders.Combat;
 using CrystalDefenders.Units;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,11 +15,10 @@ namespace CrystalDefenders.Gameplay
         [SerializeField] private int enemiesIncrementPerWave = 2;
         [SerializeField] private int waveBonusResources = 100;
         [SerializeField] private float baseSpawnInterval = 1.5f;
-        [SerializeField] private float spawnIntervalAccelerationPerWave = -0.1f; // negative to speed up
+        [SerializeField] private float spawnIntervalAccelerationPerWave = -0.1f;
+        [SerializeField] private int guaranteedCounterWave = 5; // wave threshold to always spawn all enemy types
 
-        [SerializeField] private TMP_Text waveText; // <-- UI Text to show wave number
-
-        // Manual wave rules removed; spawning is fully adaptive
+        [SerializeField] private TMP_Text waveText;
 
         private readonly List<EnemySpawner> spawners = new List<EnemySpawner>();
         private int currentWave = 0;
@@ -38,9 +37,9 @@ namespace CrystalDefenders.Gameplay
 
         public void StartNextWave()
         {
+            Debug.Log($"Starting Wave {currentWave}");
             currentWave++;
 
-            // Update the wave UI
             if (waveText != null)
                 waveText.text = $"Wave {currentWave}";
 
@@ -55,42 +54,56 @@ namespace CrystalDefenders.Gameplay
             foreach (var spawner in spawners)
             {
                 int count = toSpawnPerSpawner;
-                // Adaptive difficulty adjustment
+
                 int playerResources = ResourceManager.Instance != null ? ResourceManager.Instance.CurrentResources : 0;
                 int towerHealth = GameManager.Instance != null && GameManager.Instance.Tower != null
                     ? (GameManager.Instance.Tower.GetComponent<Health>()?.CurrentHealth ?? 1000)
                     : 1000;
-                float diff = WaveAdaptiveExtensions.ComputeDifficultyMultiplier(currentWave, playerResources, towerHealth);
-                count = Mathf.RoundToInt(count * Mathf.Clamp(diff, 0.6f, 1.8f));
-                aliveEnemies += count;
-                float interval = Mathf.Max(0.1f, baseSpawnInterval + spawnIntervalAccelerationPerWave * (currentWave - 1));
-                // interval can be tuned adaptively later if needed
 
-                // Auto variant selection based on capability
+                float diff = WaveAdaptiveExtensions.ComputeDifficultyMultiplier(currentWave, playerResources, towerHealth);
+                float spawnMult = WaveAdaptiveExtensions.ComputeSpawnMultiplier(currentWave, playerResources, towerHealth);
+
+                count = Mathf.RoundToInt(count * Mathf.Clamp(spawnMult, 0.5f, 2.5f));
+                aliveEnemies += count;
+
+                float interval = Mathf.Max(0.1f, baseSpawnInterval + spawnIntervalAccelerationPerWave * (currentWave - 1));
+
+                // Determine which prefabs to spawn
+                var gm = GameManager.Instance;
+                var baseEnemy = gm != null ? gm.enemyPrefab : null;
+                var fastEnemy = gm != null ? gm.enemyFastPrefab : null;
+                var rangedShooter = gm != null ? gm.enemyRangedPrefab : null;
+
+                List<Units.Enemy> enemiesToSpawn = new List<Units.Enemy>();
+                List<float> weights = new List<float>();
+
+                // Adaptive variant selection
                 var variants = SelectVariantsForPlayerCapability(diff);
-                var weights = variants.weights;
-                var enemies = variants.prefabs;
-                if (enemies != null && enemies.Length > 0)
+                if (variants.prefabs != null)
                 {
-                    spawner.BeginSpawning(count, enemies, weights, interval, enemy =>
-                    {
-                        var health = enemy.GetComponent<Health>();
-                        if (health != null)
-                            health.SetMaxHealth(Mathf.RoundToInt((10 + (currentWave - 1) * 10) * diff), true);
-                    });
+                    enemiesToSpawn.AddRange(variants.prefabs);
+                    weights.AddRange(variants.weights);
                 }
-                else
+
+                // ✅ Adaptive counter logic based on performance & threshold
+                bool forceAllEnemies = WaveAdaptiveExtensions.ShouldSpawnAllEnemyTypes(currentWave, playerResources, towerHealth, guaranteedCounterWave);
+
+                if (forceAllEnemies)
                 {
-                    spawner.BeginSpawning(count, null, null, interval, enemy =>
-                    {
-                        var health = enemy.GetComponent<Health>();
-                        if (health != null)
-                            health.SetMaxHealth(Mathf.RoundToInt((10 + (currentWave - 1) * 10) * diff), true);
-                    });
+                    if (fastEnemy != null && !enemiesToSpawn.Contains(fastEnemy)) { enemiesToSpawn.Add(fastEnemy); weights.Add(0.25f); }
+                    if (rangedShooter != null && !enemiesToSpawn.Contains(rangedShooter)) { enemiesToSpawn.Add(rangedShooter); weights.Add(0.25f); }
                 }
+
+                spawner.BeginSpawning(count, enemiesToSpawn.ToArray(), weights.ToArray(), interval, enemy =>
+                {
+                    var health = enemy.GetComponent<Health>();
+                    if (health != null)
+                        health.SetMaxHealth(Mathf.RoundToInt((10 + (currentWave - 1) * 10) * diff), true);
+                });
+
+                Debug.Log($"[WaveManager] Wave {currentWave} | TotalCount={count} | Diff={diff:F2} | SpawnMult={spawnMult:F2} | ForceAll={forceAllEnemies}");
             }
 
-            // Wait until all enemies are dead
             while (aliveEnemies > 0)
             {
                 yield return new WaitForSeconds(0.5f);
@@ -99,12 +112,8 @@ namespace CrystalDefenders.Gameplay
             ResourceManager.Instance?.AddWaveBonus(waveBonusResources);
         }
 
-        // Removed GetRuleForCurrentWave and GetExtraEnemiesForCurrentWave
-
-        // Determine enemy variants based on capability proxy (diff) and presence of counters
         private (Units.Enemy[] prefabs, float[] weights) SelectVariantsForPlayerCapability(float diff)
         {
-            // Locate prefabs via GameManager references if available
             var gm = GameManager.Instance;
             var baseEnemy = gm != null ? gm.enemyPrefab : null;
             var fast = gm != null ? gm.enemyFastPrefab : null;
@@ -117,12 +126,12 @@ namespace CrystalDefenders.Gameplay
 
             if (playerStruggling)
             {
-                return (baseEnemy != null ? new Units.Enemy[] { baseEnemy } : null, baseEnemy != null ? new float[] { 1f } : null);
+                return (baseEnemy != null ? new Units.Enemy[] { baseEnemy } : null,
+                        baseEnemy != null ? new float[] { 1f } : null);
             }
 
-            // Player performing well: include counters only if player has matching defender types
-            var list = new System.Collections.Generic.List<Units.Enemy>();
-            var w = new System.Collections.Generic.List<float>();
+            var list = new List<Units.Enemy>();
+            var w = new List<float>();
             if (baseEnemy != null) { list.Add(baseEnemy); w.Add(0.5f); }
             if (hasPoisonArcher && fast != null) { list.Add(fast); w.Add(0.25f); }
             if (hasFireMage && ranged != null) { list.Add(ranged); w.Add(0.25f); }
@@ -131,9 +140,9 @@ namespace CrystalDefenders.Gameplay
             return (list.ToArray(), w.ToArray());
         }
 
-        // Called externally when an enemy dies
         public void OnEnemyDied()
         {
+            Debug.Log($"Enemy died. Remaining: {aliveEnemies - 1}");
             if (aliveEnemies > 0) aliveEnemies--;
             if (aliveEnemies == 0)
             {
@@ -148,5 +157,3 @@ namespace CrystalDefenders.Gameplay
         }
     }
 }
-
-
