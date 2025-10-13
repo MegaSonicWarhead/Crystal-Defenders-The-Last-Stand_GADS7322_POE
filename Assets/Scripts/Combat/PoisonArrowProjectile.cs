@@ -1,6 +1,7 @@
+using CrystalDefenders.Combat;
+using CrystalDefenders.Units;
 using System.Collections;
 using UnityEngine;
-using CrystalDefenders.Combat;
 
 namespace CrystalDefenders.Combat
 {
@@ -41,11 +42,17 @@ namespace CrystalDefenders.Combat
 
         private IEnumerator ApplyPoison(Health targetHealth)
         {
+            if (targetHealth == null) yield break;
+
+            // Trigger visual if the target has EnemyFast component
+            var enemyFast = targetHealth.GetComponent<EnemyFast>();
+            if (enemyFast != null)
+                enemyFast.ApplyPoisonVisual(poisonDuration);
+
             float elapsed = 0f;
 
             while (elapsed < poisonDuration && targetHealth != null && targetHealth.CurrentHealth > 0)
             {
-                // Apply poison tick
                 if (!string.IsNullOrEmpty(damageTag))
                     targetHealth.ApplyDamage(poisonTickDamage, damageTag);
                 else

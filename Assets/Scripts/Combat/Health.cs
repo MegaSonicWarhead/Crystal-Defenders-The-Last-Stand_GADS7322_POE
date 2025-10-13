@@ -11,7 +11,7 @@ namespace CrystalDefenders.Combat
 
         [Header("Damage Gating")]
         [Tooltip("If empty or null, all damage is accepted")]
-        [SerializeField] public string requiredDamageTag = null; // e.g., "poison" or "fire"
+        [SerializeField] public string requiredDamageTag = null;
 
         private int currentHealth;
         public int CurrentHealth

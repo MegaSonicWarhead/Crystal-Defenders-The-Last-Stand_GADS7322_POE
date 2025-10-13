@@ -61,7 +61,14 @@ namespace CrystalDefenders.Gameplay
                     : 1000;
 
                 float diff = WaveAdaptiveExtensions.ComputeDifficultyMultiplier(currentWave, playerResources, towerHealth);
-                float spawnMult = WaveAdaptiveExtensions.ComputeSpawnMultiplier(currentWave, playerResources, towerHealth);
+                float baseSpawnMult = WaveAdaptiveExtensions.ComputeSpawnMultiplier(currentWave, playerResources, towerHealth);
+                float defenderHealthFactor = ComputeDefenderHealthFactor();
+                float defenderPressureAdj = WaveAdaptiveExtensions.ComputeDefenderPressureAdjustment(defenderHealthFactor);
+
+                float spawnMult = baseSpawnMult * defenderPressureAdj;
+
+                Debug.Log($"[WaveManager] DefenderHealthFactor={defenderHealthFactor:F2} | DefenderPressureAdj={defenderPressureAdj:F2} | FinalSpawnMult={spawnMult:F2}");
+
 
                 count = Mathf.RoundToInt(count * Mathf.Clamp(spawnMult, 0.5f, 2.5f));
                 aliveEnemies += count;
@@ -139,6 +146,37 @@ namespace CrystalDefenders.Gameplay
             if (list.Count == 0) return (null, null);
             return (list.ToArray(), w.ToArray());
         }
+
+        private float ComputeDefenderHealthFactor()
+        {
+            var defenders = FindObjectsOfType<Defender>(); // ✅ All three prefabs use Defender.cs
+
+            if (defenders.Length == 0)
+                return 1f; // No defenders → assume strong performance
+
+            float total = 0f;
+            int count = 0;
+
+            foreach (var def in defenders)
+            {
+                // Match only prefab instances we care about by name check
+                if (def.name.Contains("Defender_Turret") ||
+                    def.name.Contains("DefenderFireCannon") ||
+                    def.name.Contains("DefenderPoisonBalista"))
+                {
+                    var health = def.GetComponent<Health>();
+                    if (health != null)
+                    {
+                        total += (float)health.CurrentHealth / health.MaxHealth;
+                        count++;
+                    }
+                }
+            }
+
+            if (count == 0) return 1f;
+            return total / count; // 0.0 - 1.0 health scaling
+        }
+
 
         public void OnEnemyDied()
         {

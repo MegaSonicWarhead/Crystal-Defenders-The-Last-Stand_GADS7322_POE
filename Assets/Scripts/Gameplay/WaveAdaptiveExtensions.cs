@@ -28,6 +28,14 @@ namespace CrystalDefenders.Gameplay
             return baseFactor * resourceFactor * hpFactor;
         }
 
+        public static float ComputeDefenderPressureAdjustment(float defenderHealthFactor)
+        {
+            // Healthy defenders = increase challenge, weak defenses = reduce pressure
+            return defenderHealthFactor >= 0.8f ? 1.25f :       // Strong defense → +25% pressure
+                   defenderHealthFactor >= 0.5f ? 1.0f :        // Mixed → neutral
+                   0.7f;                                        // Defenders are weak → ease wave (-30%)
+        }
+
         // Determines whether all enemy types should spawn this wave
         public static bool ShouldSpawnAllEnemyTypes(int wave, int playerResources, int towerHealth, int thresholdWave = 5)
         {

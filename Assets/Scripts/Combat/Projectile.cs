@@ -8,7 +8,7 @@ public class Projectile : MonoBehaviour
     public float speed = 12f;
     [SerializeField] public int damage;
     [SerializeField] public Transform target;
-    [SerializeField] public string damageTag = null; // e.g. "poison" or "fire"
+    [SerializeField] public string damageTag = null; //  "poison" or "fire"
 
     // Use this to initialize the projectile with target and damage
     public virtual void Initialize(Transform target, int damage, string tag = null)
