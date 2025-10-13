@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using CrystalDefenders.Combat;
+using CrystalDefenders.Gameplay; // 👈 Needed for PlacementNode reference
 
 namespace CrystalDefenders.Units
 {
@@ -12,10 +13,13 @@ namespace CrystalDefenders.Units
         public const int RepairCost = 25;
 
         [Header("Placement Settings")]
-        [SerializeField] private GameObject placementNodePrefab; // Assign in Inspector
+        [SerializeField] private GameObject placementNodePrefab; // You can remove this now (no longer needed)
 
-        protected Health health; // ✅ Made protected: allows subclass towers (Fire/Poison) to modify health
-        private AutoAttack autoAttack; // ✅ Cache for possible upgrade modifiers
+        protected Health health;
+        private AutoAttack autoAttack;
+
+        // 🔗 Link to the node that spawned this defender
+        public PlacementNode OriginNode { get; set; }
 
         private static readonly List<Defender> registry = new List<Defender>();
         public static IReadOnlyList<Defender> Registry => registry;
@@ -34,7 +38,6 @@ namespace CrystalDefenders.Units
             health.onDeath.AddListener(OnDefenderDestroyed);
         }
 
-        /// ✅ Central place to define default defender stats (clean for subclasses to override)
         protected virtual void ConfigureBaseStats()
         {
             autoAttack.range = 5f;
@@ -52,14 +55,12 @@ namespace CrystalDefenders.Units
             registry.Remove(this);
         }
 
-        // --- Repair full health ---
         public void RepairFull()
         {
             if (health != null)
                 health.Heal(health.MaxHealth - health.CurrentHealth);
         }
 
-        // --- Repair partial (custom amount) ---
         public void RepairAmount(int amount)
         {
             if (health != null)
@@ -74,11 +75,15 @@ namespace CrystalDefenders.Units
         // --- Handle Defender destruction ---
         protected virtual void OnDefenderDestroyed()
         {
-            Debug.Log($"{gameObject.name} destroyed! Replacing with placement node.");
+            Debug.Log($"{gameObject.name} destroyed!");
 
-            if (placementNodePrefab != null)
-                Instantiate(placementNodePrefab, transform.position, Quaternion.identity);
+            // ✅ Instead of spawning a new node, free the original one
+            if (OriginNode != null)
+            {
+                OriginNode.Free();
+            }
 
+            // Optional: delay destroy to allow death effects
             Destroy(gameObject);
         }
     }
