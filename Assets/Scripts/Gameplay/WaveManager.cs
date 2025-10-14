@@ -11,13 +11,20 @@ namespace CrystalDefenders.Gameplay
     {
         public static WaveManager Instance { get; private set; }
 
-        [SerializeField] private int baseEnemiesPerSpawner = 5;
-        [SerializeField] private int enemiesIncrementPerWave = 2;
+        [Header("Base Wave Settings")]
+        [SerializeField] private int baseEnemiesPerSpawner = 3;        // Starting point
+        [SerializeField] private int enemiesIncrementPerWave = 2;      // Growth per wave
         [SerializeField] private int waveBonusResources = 100;
-        [SerializeField] private float baseSpawnInterval = 1.5f;
-        [SerializeField] private float spawnIntervalAccelerationPerWave = -0.1f;
-        [SerializeField] private int guaranteedCounterWave = 5; // wave threshold to always spawn all enemy types
 
+        [Header("Spawn Timing Settings")]
+        [SerializeField] private float baseSpawnInterval = 2.0f;       // Longer gaps early on
+        [SerializeField] private float spawnIntervalAccelerationPerWave = -0.08f; // Faster over time
+        [SerializeField] private float earlyWaveSlowMultiplier = 1.5f; // Waves 1–2 slower by 50%
+
+        [Header("Wave Rules")]
+        [SerializeField] private int guaranteedCounterWave = 5; // Always spawn all types past this wave
+
+        [Header("UI")]
         [SerializeField] private TMP_Text waveText;
 
         private readonly List<EnemySpawner> spawners = new List<EnemySpawner>();
@@ -26,97 +33,116 @@ namespace CrystalDefenders.Gameplay
 
         private void Awake()
         {
-            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
             Instance = this;
         }
 
         public void RegisterSpawner(EnemySpawner spawner)
         {
-            if (spawner != null && !spawners.Contains(spawner)) spawners.Add(spawner);
+            if (spawner != null && !spawners.Contains(spawner))
+                spawners.Add(spawner);
         }
 
         public void StartNextWave()
         {
-            Debug.Log($"Starting Wave {currentWave}");
             currentWave++;
+            Debug.Log($"[WaveManager] Starting Wave {currentWave}");
 
             if (waveText != null)
                 waveText.text = $"Wave {currentWave}";
 
-            int toSpawnPerSpawner = baseEnemiesPerSpawner + enemiesIncrementPerWave * (currentWave - 1);
-            StartCoroutine(SpawnWave(toSpawnPerSpawner));
+            StartCoroutine(SpawnWaveRoutine());
         }
 
-        private IEnumerator SpawnWave(int toSpawnPerSpawner)
+        private IEnumerator SpawnWaveRoutine()
         {
             aliveEnemies = 0;
 
+            int playerResources = ResourceManager.Instance != null ? ResourceManager.Instance.CurrentResources : 0;
+            int towerHealth = GameManager.Instance != null && GameManager.Instance.Tower != null
+                ? (GameManager.Instance.Tower.GetComponent<Health>()?.CurrentHealth ?? 1000)
+                : 1000;
+
+            // Core difficulty metrics
+            float diff = WaveAdaptiveExtensions.ComputeDifficultyMultiplier(currentWave, playerResources, towerHealth);
+            float baseSpawnMult = WaveAdaptiveExtensions.ComputeSpawnMultiplier(currentWave, playerResources, towerHealth);
+            float defenderHealthFactor = ComputeDefenderHealthFactor();
+            float defenderPressureAdj = WaveAdaptiveExtensions.ComputeDefenderPressureAdjustment(defenderHealthFactor);
+
+            float spawnMult = baseSpawnMult * defenderPressureAdj;
+
+            // Adjusted enemy count and spawn timing per wave
+            int baseCount = Mathf.Max(1, baseEnemiesPerSpawner + enemiesIncrementPerWave * (currentWave - 1));
+            if (currentWave <= 2)
+                baseCount = Mathf.Max(1, baseCount - 3); // Early wave ease
+
+            int toSpawnPerSpawner = Mathf.RoundToInt(baseCount * Mathf.Clamp(spawnMult, 0.5f, 2.5f));
+
+            float interval = Mathf.Max(0.5f, baseSpawnInterval + spawnIntervalAccelerationPerWave * (currentWave - 1));
+            if (currentWave <= 2)
+                interval *= earlyWaveSlowMultiplier;
+
+            // Pick which enemy types to use
+            var gm = GameManager.Instance;
+            var baseEnemy = gm != null ? gm.enemyPrefab : null;
+            var fastEnemy = gm != null ? gm.enemyFastPrefab : null;
+            var rangedEnemy = gm != null ? gm.enemyRangedPrefab : null;
+
+            List<Units.Enemy> enemiesToSpawn = new List<Units.Enemy>();
+            List<float> weights = new List<float>();
+
+            var variants = SelectVariantsForPlayerCapability(diff);
+            if (variants.prefabs != null)
+            {
+                enemiesToSpawn.AddRange(variants.prefabs);
+                weights.AddRange(variants.weights);
+            }
+
+            bool forceAllEnemies = WaveAdaptiveExtensions.ShouldSpawnAllEnemyTypes(currentWave, playerResources, towerHealth, guaranteedCounterWave);
+            if (forceAllEnemies)
+            {
+                if (fastEnemy != null && !enemiesToSpawn.Contains(fastEnemy)) { enemiesToSpawn.Add(fastEnemy); weights.Add(0.25f); }
+                if (rangedEnemy != null && !enemiesToSpawn.Contains(rangedEnemy)) { enemiesToSpawn.Add(rangedEnemy); weights.Add(0.25f); }
+            }
+
+            Debug.Log($"[WaveManager] Wave {currentWave} | Diff={diff:F2} | Count={toSpawnPerSpawner} | Interval={interval:F2}s | PressureAdj={defenderPressureAdj:F2}");
+
+            // Spawn from each spawner
             foreach (var spawner in spawners)
             {
-                int count = toSpawnPerSpawner;
+                if (spawner == null) continue;
 
-                int playerResources = ResourceManager.Instance != null ? ResourceManager.Instance.CurrentResources : 0;
-                int towerHealth = GameManager.Instance != null && GameManager.Instance.Tower != null
-                    ? (GameManager.Instance.Tower.GetComponent<Health>()?.CurrentHealth ?? 1000)
-                    : 1000;
+                aliveEnemies += toSpawnPerSpawner;
 
-                float diff = WaveAdaptiveExtensions.ComputeDifficultyMultiplier(currentWave, playerResources, towerHealth);
-                float baseSpawnMult = WaveAdaptiveExtensions.ComputeSpawnMultiplier(currentWave, playerResources, towerHealth);
-                float defenderHealthFactor = ComputeDefenderHealthFactor();
-                float defenderPressureAdj = WaveAdaptiveExtensions.ComputeDefenderPressureAdjustment(defenderHealthFactor);
-
-                float spawnMult = baseSpawnMult * defenderPressureAdj;
-
-                Debug.Log($"[WaveManager] DefenderHealthFactor={defenderHealthFactor:F2} | DefenderPressureAdj={defenderPressureAdj:F2} | FinalSpawnMult={spawnMult:F2}");
-
-
-                count = Mathf.RoundToInt(count * Mathf.Clamp(spawnMult, 0.5f, 2.5f));
-                aliveEnemies += count;
-
-                float interval = Mathf.Max(0.1f, baseSpawnInterval + spawnIntervalAccelerationPerWave * (currentWave - 1));
-
-                // Determine which prefabs to spawn
-                var gm = GameManager.Instance;
-                var baseEnemy = gm != null ? gm.enemyPrefab : null;
-                var fastEnemy = gm != null ? gm.enemyFastPrefab : null;
-                var rangedShooter = gm != null ? gm.enemyRangedPrefab : null;
-
-                List<Units.Enemy> enemiesToSpawn = new List<Units.Enemy>();
-                List<float> weights = new List<float>();
-
-                // Adaptive variant selection
-                var variants = SelectVariantsForPlayerCapability(diff);
-                if (variants.prefabs != null)
-                {
-                    enemiesToSpawn.AddRange(variants.prefabs);
-                    weights.AddRange(variants.weights);
-                }
-
-                // ✅ Adaptive counter logic based on performance & threshold
-                bool forceAllEnemies = WaveAdaptiveExtensions.ShouldSpawnAllEnemyTypes(currentWave, playerResources, towerHealth, guaranteedCounterWave);
-
-                if (forceAllEnemies)
-                {
-                    if (fastEnemy != null && !enemiesToSpawn.Contains(fastEnemy)) { enemiesToSpawn.Add(fastEnemy); weights.Add(0.25f); }
-                    if (rangedShooter != null && !enemiesToSpawn.Contains(rangedShooter)) { enemiesToSpawn.Add(rangedShooter); weights.Add(0.25f); }
-                }
-
-                spawner.BeginSpawning(count, enemiesToSpawn.ToArray(), weights.ToArray(), interval, enemy =>
-                {
-                    var health = enemy.GetComponent<Health>();
-                    if (health != null)
-                        health.SetMaxHealth(Mathf.RoundToInt((10 + (currentWave - 1) * 10) * diff), true);
-                });
-
-                Debug.Log($"[WaveManager] Wave {currentWave} | TotalCount={count} | Diff={diff:F2} | SpawnMult={spawnMult:F2} | ForceAll={forceAllEnemies}");
+                spawner.BeginSpawning(
+                    toSpawnPerSpawner,
+                    enemiesToSpawn,
+                    weights,
+                    interval,
+                    enemy =>
+                    {
+                        var health = enemy.GetComponent<Health>();
+                        if (health != null)
+                        {
+                            int hp = Mathf.RoundToInt((10 + (currentWave - 1) * 10) * diff);
+                            health.SetMaxHealth(hp, true);
+                        }
+                    });
             }
 
+            // Wait until all enemies are dead
             while (aliveEnemies > 0)
-            {
                 yield return new WaitForSeconds(0.5f);
-            }
 
             ResourceManager.Instance?.AddWaveBonus(waveBonusResources);
+
+            // Delay next wave for pacing
+            yield return new WaitForSeconds(currentWave <= 2 ? 5f : 3f);
+            StartNextWave();
         }
 
         private (Units.Enemy[] prefabs, float[] weights) SelectVariantsForPlayerCapability(float diff)
@@ -149,17 +175,15 @@ namespace CrystalDefenders.Gameplay
 
         private float ComputeDefenderHealthFactor()
         {
-            var defenders = FindObjectsOfType<Defender>(); // ✅ All three prefabs use Defender.cs
-
+            var defenders = FindObjectsOfType<Defender>();
             if (defenders.Length == 0)
-                return 1f; // No defenders → assume strong performance
+                return 1f;
 
             float total = 0f;
             int count = 0;
 
             foreach (var def in defenders)
             {
-                // Match only prefab instances we care about by name check
                 if (def.name.Contains("Defender_Turret") ||
                     def.name.Contains("DefenderFireCannon") ||
                     def.name.Contains("DefenderPoisonBalista"))
@@ -174,24 +198,14 @@ namespace CrystalDefenders.Gameplay
             }
 
             if (count == 0) return 1f;
-            return total / count; // 0.0 - 1.0 health scaling
+            return total / count;
         }
-
 
         public void OnEnemyDied()
         {
-            Debug.Log($"Enemy died. Remaining: {aliveEnemies - 1}");
             if (aliveEnemies > 0) aliveEnemies--;
             if (aliveEnemies == 0)
-            {
-                StartCoroutine(StartNextWaveDelayed());
-            }
-        }
-
-        private IEnumerator StartNextWaveDelayed()
-        {
-            yield return new WaitForSeconds(2f);
-            StartNextWave();
+                Debug.Log("[WaveManager] All enemies cleared!");
         }
     }
 }

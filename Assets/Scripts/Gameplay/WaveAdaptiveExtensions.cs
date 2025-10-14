@@ -4,47 +4,57 @@ namespace CrystalDefenders.Gameplay
 {
     public static class WaveAdaptiveExtensions
     {
-        // Computes difficulty multiplier for health scaling
+        // Scales enemy HP difficulty
         public static float ComputeDifficultyMultiplier(int wave, int playerResources, int towerHealth)
         {
-            float waveFactor = 1f + (wave - 1) * 0.1f;
-            float resourceFactor = Mathf.Clamp01(playerResources / 500f) * 0.5f + 1f; // up to +50%
+            // Slower start, smoother ramp
+            float waveFactor = 1f + (wave - 1) * 0.08f; // +8% per wave instead of 10%
+
+            // Resources make enemies slightly tougher, but only past 400 resources
+            float resourceFactor = 1f + Mathf.Clamp01((playerResources - 400f) / 600f) * 0.3f; // up to +30%
+
+            // Reduce difficulty if tower is hurt — stronger safety brake
             float towerFactor = Mathf.Clamp01((1000 - towerHealth) / 1000f);
-            float safetyBrake = 1f - 0.4f * towerFactor; // reduce diff when tower is hurt
-            return waveFactor * resourceFactor * safetyBrake;
+            float safetyBrake = 1f - 0.5f * towerFactor; // 50% reduction at 0 HP
+
+            // Ensure first few waves stay mild
+            float earlyGameEase = wave == 1 ? 1f : wave == 2 ? 0.9f : 1f;
+
+            return waveFactor * resourceFactor * safetyBrake * earlyGameEase;
         }
 
-        // Computes spawn multiplier for adaptive enemy count
+        // Controls number of enemies per wave
         public static float ComputeSpawnMultiplier(int wave, int playerResources, int towerHealth)
         {
-            float baseFactor = 1f + (wave - 1) * 0.05f;
+            // Very small per-wave increment
+            float baseFactor = 1f + (wave - 1) * 0.03f;
 
-            // More resources = increase pressure
-            float resourceFactor = Mathf.Clamp01(playerResources / 600f) * 0.6f + 1f; // up to +60%
+            // Resource scaling — starts later and ramps slower
+            float resourceFactor = 1f + Mathf.Clamp01((playerResources - 300f) / 600f) * 0.4f;
 
-            // If tower HP is HIGH, increase pressure. If it's low, ease off.
-            float hpFactor = towerHealth > 800 ? 1.3f : towerHealth > 500 ? 1.1f : 0.85f;
+            // Tower health check (if tower is strong, slightly more enemies)
+            float hpFactor = towerHealth > 800 ? 1.15f :
+                             towerHealth > 500 ? 1.0f :
+                             0.85f;
 
-            return baseFactor * resourceFactor * hpFactor;
+            // Smooth clamp to avoid spikes
+            return Mathf.Clamp(baseFactor * resourceFactor * hpFactor, 0.7f, 1.6f);
         }
 
+        // Defender pressure: slightly softer curve
         public static float ComputeDefenderPressureAdjustment(float defenderHealthFactor)
         {
-            // Healthy defenders = increase challenge, weak defenses = reduce pressure
-            return defenderHealthFactor >= 0.8f ? 1.25f :       // Strong defense → +25% pressure
-                   defenderHealthFactor >= 0.5f ? 1.0f :        // Mixed → neutral
-                   0.7f;                                        // Defenders are weak → ease wave (-30%)
+            return defenderHealthFactor >= 0.8f ? 1.15f :   // healthy defenses → +15%
+                   defenderHealthFactor >= 0.5f ? 1.0f :    // neutral
+                   0.8f;                                    // weak → -20%
         }
 
-        // Determines whether all enemy types should spawn this wave
+        // When to spawn all enemy types
         public static bool ShouldSpawnAllEnemyTypes(int wave, int playerResources, int towerHealth, int thresholdWave = 5)
         {
-            // Player is considered doing well if difficulty multiplier < 1.2 (optional tweakable)
             float diff = ComputeDifficultyMultiplier(wave, playerResources, towerHealth);
-            bool playerDoingWell = diff < 1.2f;
-
-            // Spawn all enemies if past threshold wave OR even wave + player doing well
-            return wave >= thresholdWave || (wave % 2 == 0 && playerDoingWell);
+            bool doingWell = diff < 1.3f;
+            return wave >= thresholdWave || (wave % 2 == 0 && doingWell);
         }
     }
 }

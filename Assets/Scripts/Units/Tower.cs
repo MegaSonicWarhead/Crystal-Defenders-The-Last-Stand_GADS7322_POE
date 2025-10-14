@@ -16,7 +16,7 @@ namespace CrystalDefenders.Units
         private void Awake()
         {
             health = GetComponent<Health>();
-            health.SetMaxHealth(1000, true);
+            health.SetMaxHealth(2000, true);
             health.onDeath.AddListener(OnTowerDestroyed);
 
             // ✅ Subscribe to damage/heal events to update UI
