@@ -4,6 +4,10 @@ using CrystalDefenders.Gameplay;
 
 namespace CrystalDefenders.Units
 {
+    /// <summary>
+    /// Ranged enemy type. Only vulnerable to fire damage.
+    /// Shoots projectiles at closest tower or defender.
+    /// </summary>
     [RequireComponent(typeof(Health))]
     public class EnemyRanged : Enemy
     {
@@ -15,8 +19,9 @@ namespace CrystalDefenders.Units
 
         private void Awake()
         {
+            // Only fire damage affects this enemy
             var h = GetComponent<Health>();
-            h.requiredDamageTag = "fire"; // only fire damages this enemy
+            h.requiredDamageTag = "fire";
 
             // Subscribe to death event
             h.onDeath.AddListener(OnDeath);
@@ -24,7 +29,6 @@ namespace CrystalDefenders.Units
 
         private void OnDeath()
         {
-            // Destroy the enemy
             Destroy(gameObject);
             WaveManager.Instance?.OnEnemyDied();
         }
@@ -35,6 +39,9 @@ namespace CrystalDefenders.Units
             TryAttackTargets();
         }
 
+        /// <summary>
+        /// Attack closest valid target if cooldown elapsed
+        /// </summary>
         private void TryAttackTargets()
         {
             if (Time.time - lastAttackTime < attackCooldown) return;
@@ -49,27 +56,34 @@ namespace CrystalDefenders.Units
             }
         }
 
+        /// <summary>
+        /// Instantiates projectile and assigns damage, tag, and speed
+        /// </summary>
         private void ShootProjectileAt(GameObject target)
         {
-            if (projectilePrefab == null) return;
+            if (projectilePrefab == null || target == null) return;
 
             GameObject proj = Instantiate(projectilePrefab, transform.position, Quaternion.identity);
             Projectile projectile = proj.GetComponent<Projectile>();
             if (projectile != null)
             {
                 projectile.damage = projectileDamage;
-                projectile.damageTag = projectileDamageTag; // <--- Assign tag
+                projectile.damageTag = projectileDamageTag; // ensure projectile respects damage type
                 projectile.target = target.transform;
                 projectile.speed = projectileSpeed;
             }
         }
 
+        /// <summary>
+        /// Finds the closest damageable object (tower or defender)
+        /// </summary>
         private GameObject GetClosestDamageable()
         {
             GameObject best = null;
             float bestDistance = float.MaxValue;
 
-            var gm = Gameplay.GameManager.Instance;
+            // Check tower first
+            var gm = GameManager.Instance;
             if (gm != null && gm.Tower != null)
             {
                 float dt = Vector3.Distance(transform.position, gm.Tower.position);
@@ -80,6 +94,7 @@ namespace CrystalDefenders.Units
                 }
             }
 
+            // Then check defenders
             foreach (var def in Defender.Registry)
             {
                 if (def == null) continue;

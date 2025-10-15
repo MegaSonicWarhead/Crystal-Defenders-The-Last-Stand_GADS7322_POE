@@ -3,50 +3,64 @@ using UnityEngine;
 
 namespace CrystalDefenders.Combat
 {
+    /// <summary>
+    /// Fireball projectile with arc trajectory and area-of-effect splash damage.
+    /// Inherits from Projectile.
+    /// </summary>
     public class FireballAoEProjectile : Projectile
     {
-        [SerializeField] private float explosionRadius = 2.5f;
-        [SerializeField] private int splashDamage = 10;
-        [SerializeField] private float arcHeight = 2.5f;
-        [SerializeField] private float projectileSpeed = 12f; // controls travel time
+        [Header("Fireball Settings")]
+        [SerializeField] private float explosionRadius = 2.5f; // Radius for AOE damage
+        [SerializeField] private int splashDamage = 10;        // Damage dealt to nearby enemies
+        [SerializeField] private float arcHeight = 2.5f;       // Max height of parabolic arc
+        [SerializeField] private float projectileSpeed = 12f;  // Controls travel time to target
 
         private Vector3 startPosition;
-        private Vector3 targetSnapshot;
+        private Vector3 targetSnapshot; // Take a snapshot of target's position at spawn
         private float travelTime;
         private float elapsed;
 
         private void Awake()
         {
-            // Ensure damageTag is set as early as possible
+            // Ensure damage tag is set for tower targeting
             if (string.IsNullOrEmpty(damageTag))
                 damageTag = "fire";
         }
 
         private void Reset()
         {
+            // Ensures default tag in editor reset
             damageTag = "fire";
         }
 
+        /// <summary>
+        /// Initializes projectile with target, damage, and optional tag.
+        /// </summary>
         public override void Initialize(Transform target, int damage, string tag = null)
         {
             base.Initialize(target, damage, tag);
+
             startPosition = transform.position;
             targetSnapshot = target != null ? target.position : transform.position + transform.forward * 5f;
+
+            // Calculate travel time based on distance and speed
             float distance = Vector3.Distance(startPosition, targetSnapshot);
             float speed = projectileSpeed > 0.01f ? projectileSpeed : 12f;
             travelTime = Mathf.Max(0.1f, distance / speed);
+
             elapsed = 0f;
         }
 
         protected override void Update()
         {
-            // Arc along a simple parabolic path towards the snapshot target
+            // Move projectile along a parabolic arc
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / travelTime);
             Vector3 pos = Vector3.Lerp(startPosition, targetSnapshot, t);
-            pos.y += 4f * arcHeight * t * (1f - t); // parabola peaking at t=0.5
+            pos.y += 4f * arcHeight * t * (1f - t); // Parabola formula: peaks at t=0.5
             transform.position = pos;
 
+            // Impact at destination
             if (t >= 1f)
             {
                 OnImpact(transform.position, null);
@@ -54,12 +68,14 @@ namespace CrystalDefenders.Combat
             }
         }
 
+        /// <summary>
+        /// Handles both direct hit and splash damage.
+        /// </summary>
         protected override void OnImpact(Vector3 hitPosition, Transform hitTarget)
         {
-            // Debug: log to verify tags
             Debug.Log($"Fireball impact at {hitPosition} | damageTag={damageTag}");
 
-            // Deal direct hit damage first
+            // Direct hit damage
             if (hitTarget != null)
             {
                 var h = hitTarget.GetComponent<Health>();
@@ -72,14 +88,13 @@ namespace CrystalDefenders.Combat
                 }
             }
 
-            // Splash damage to nearby enemies
+            // Splash damage to all enemies within explosion radius
             var colliders = Physics.OverlapSphere(hitPosition, explosionRadius);
             for (int i = 0; i < colliders.Length; i++)
             {
                 var h = colliders[i].GetComponent<Health>();
                 if (h != null)
                 {
-                    // Debug: log each affected enemy
                     Debug.Log($"Fireball splash hitting {h.gameObject.name} | damageTag={damageTag} | enemy requiredTag={h.requiredDamageTag}");
 
                     if (!string.IsNullOrEmpty(damageTag))
