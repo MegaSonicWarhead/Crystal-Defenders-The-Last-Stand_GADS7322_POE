@@ -1,7 +1,6 @@
-using CrystalDefenders.Combat;
+﻿using CrystalDefenders.Combat;
 using CrystalDefenders.Gameplay;
 using CrystalDefenders.Units;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -16,6 +15,7 @@ public class WeaponShop : MonoBehaviour
     public Button poisonArcherButton;
     public Button fireMageButton;
     public Button repairButton;
+    public Button upgradeButton;
 
     [Header("Defender Prefabs")]
     public Defender defaultDefenderPrefab;
@@ -29,6 +29,8 @@ public class WeaponShop : MonoBehaviour
     public static WeaponShop Instance { get; private set; }
     public bool HasDefenderToPlace { get; private set; } = false;
     public Defender SelectedDefenderPrefab { get; private set; }
+
+    private SelectableTower selectedTower;
 
     private void Awake()
     {
@@ -46,62 +48,69 @@ public class WeaponShop : MonoBehaviour
         if (poisonArcherButton != null) poisonArcherButton.onClick.AddListener(OnPoisonArcherButton);
         if (fireMageButton != null) fireMageButton.onClick.AddListener(OnFireMageButton);
         repairButton.onClick.AddListener(OnRepairButton);
+
+        if (upgradeButton != null)
+            upgradeButton.onClick.AddListener(OnUpgradeButton);
     }
 
     private void Update()
     {
         if (resourceText != null)
-        {
             resourceText.text = $"Resources: {ResourceManager.Instance.CurrentResources}";
-        }
 
-        // Allow user to cancel placement with Escape or Right-Click
         if (HasDefenderToPlace && (Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(1)))
-        {
             CancelPlacement();
-        }
 
         UpdateButtonStates();
     }
 
     private void UpdateButtonStates()
     {
-        // Disable Buy buttons if not enough resources OR already holding a defender OR no free nodes
         bool hasFreeNode = HasAnyAvailablePlacementNode();
+
         weaponTurretButton.interactable =
             ResourceManager.Instance.CurrentResources >= Defender.Cost && !HasDefenderToPlace && hasFreeNode;
 
         if (poisonArcherButton != null)
-        {
             poisonArcherButton.interactable =
                 ResourceManager.Instance.CurrentResources >= poisonArcherCost && !HasDefenderToPlace && hasFreeNode;
-        }
+
         if (fireMageButton != null)
-        {
             fireMageButton.interactable =
                 ResourceManager.Instance.CurrentResources >= fireMageCost && !HasDefenderToPlace && hasFreeNode;
-        }
 
-        // Disable Repair button if not enough resources OR no damaged defenders
         bool hasDamaged = Defender.Registry.Any(
             d => d != null && d.GetComponent<Health>().CurrentHealth < d.GetComponent<Health>().MaxHealth
         );
         repairButton.interactable = ResourceManager.Instance.CurrentResources >= Defender.RepairCost && hasDamaged;
+
+        // Enable upgrade only if something is selected and can upgrade
+        if (upgradeButton != null)
+        {
+            if (selectedTower != null)
+            {
+                var up = selectedTower.GetUpgradeable();
+                upgradeButton.interactable =
+                    up != null && up.CanUpgrade() && UpgradeManager.Instance.CanAfford(100); // base upgrade cost, handled per tower
+            }
+            else
+            {
+                upgradeButton.interactable = false;
+            }
+        }
     }
 
     private bool HasAnyAvailablePlacementNode()
     {
         var nodes = FindObjectsOfType<PlacementNode>(includeInactive: false);
         for (int i = 0; i < nodes.Length; i++)
-        {
-            if (nodes[i] != null && nodes[i].IsAvailable) return true;
-        }
+            if (nodes[i] != null && nodes[i].IsAvailable)
+                return true;
         return false;
     }
 
     private void OnWeaponTurretButton()
     {
-        // Toggle selection if already holding same type
         if (HasDefenderToPlace && SelectedDefenderPrefab == defaultDefenderPrefab)
         {
             CancelPlacement();
@@ -213,5 +222,47 @@ public class WeaponShop : MonoBehaviour
         var health = target.GetComponent<Health>();
         health.RestoreFullHealth();
         Debug.Log($"Repaired {target.name} for {Defender.RepairCost} resources.");
+    }
+
+    private void OnUpgradeButton()
+    {
+        if (selectedTower == null)
+        {
+            Debug.Log("No tower selected to upgrade.");
+            return;
+        }
+
+        var upgradeable = selectedTower.GetUpgradeable();
+        if (upgradeable == null)
+        {
+            Debug.Log("Selected object cannot be upgraded.");
+            return;
+        }
+
+        if (!upgradeable.CanUpgrade())
+        {
+            Debug.Log("Selected tower is already max tier.");
+            return;
+        }
+
+        if (!UpgradeManager.Instance.CanAfford(100)) // Default cost handled inside handler if needed
+        {
+            Debug.Log("Not enough resources to upgrade.");
+            return;
+        }
+
+        UpgradeManager.Instance.SpendResources(100);
+        upgradeable.ApplyUpgrade();
+
+        Debug.Log($"Upgraded {selectedTower.name} successfully!");
+    }
+
+    public void SelectTower(SelectableTower newSelection)
+    {
+        if (selectedTower != null)
+            selectedTower.SetSelected(false);
+
+        selectedTower = newSelection;
+        selectedTower.SetSelected(true);
     }
 }
