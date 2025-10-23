@@ -85,24 +85,36 @@ public class TowerUpgradeHandler : MonoBehaviour, IUpgradeable
     {
         if (rend == null) return;
 
+        var block = new MaterialPropertyBlock();
+        rend.GetPropertyBlock(block);
+
         Color newColor = upgradeColors[Mathf.Clamp(currentTier, 0, upgradeColors.Length - 1)];
 
-        // Use MaterialPropertyBlock to safely override color without breaking selection/highlight
-        rend.GetPropertyBlock(mpb);
-        if (rend.material.HasProperty("_BaseColor"))
-            mpb.SetColor("_BaseColor", newColor);
-        else
-            mpb.SetColor("_Color", newColor);
-
-        if (rend.material.HasProperty("_EmissionColor"))
+        // Detect which property name is available
+        if (rend.sharedMaterial.HasProperty("_BaseColor"))
         {
-            if (currentTier == 0)
-                mpb.SetColor("_EmissionColor", Color.black);
-            else
-                mpb.SetColor("_EmissionColor", newColor * 1.5f);
+            block.SetColor("_BaseColor", newColor);
+            Debug.Log($"[TowerUpgradeHandler] Applied color to _BaseColor: {newColor}");
+        }
+        else if (rend.sharedMaterial.HasProperty("_Color"))
+        {
+            block.SetColor("_Color", newColor);
+            Debug.Log($"[TowerUpgradeHandler] Applied color to _Color: {newColor}");
+        }
+        else if (rend.sharedMaterial.HasProperty("_TintColor"))
+        {
+            block.SetColor("_TintColor", newColor);
+            Debug.Log($"[TowerUpgradeHandler] Applied color to _TintColor: {newColor}");
+        }
+        else
+        {
+            Debug.LogWarning($"[TowerUpgradeHandler] No color property found on {rend.sharedMaterial.name}");
         }
 
-        rend.SetPropertyBlock(mpb);
+        if (rend.sharedMaterial.HasProperty("_EmissionColor"))
+            block.SetColor("_EmissionColor", newColor * 1.5f);
+
+        rend.SetPropertyBlock(block);
     }
 
     private void PlayUpgradeEffect()
