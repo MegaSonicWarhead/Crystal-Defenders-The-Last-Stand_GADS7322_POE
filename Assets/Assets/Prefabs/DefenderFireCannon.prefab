@@ -357,12 +357,14 @@ MonoBehaviour:
   maxUpgradeTier: 3
   healthMultiplierPerTier: 1.25
   damageMultiplierPerTier: 1.2
+  scaleIncrement: 0.3
   upgradeColors:
   - {r: 1, g: 1, b: 1, a: 0}
   - {r: 1, g: 0, b: 0.70980394, a: 1}
   - {r: 0, g: 0, b: 1, a: 1}
   - {r: 0.0627451, g: 0.0627451, b: 0.05882353, a: 1}
   upgradeEffect: {fileID: 0}
+  scalablePart: {fileID: 4547750400935915165}
 --- !u!114 &-3798614887744124298
 MonoBehaviour:
   m_ObjectHideFlags: 0

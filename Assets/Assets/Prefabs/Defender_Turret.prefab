@@ -154,12 +154,14 @@ MonoBehaviour:
   maxUpgradeTier: 3
   healthMultiplierPerTier: 1.25
   damageMultiplierPerTier: 1.2
+  scaleIncrement: 0.3
   upgradeColors:
   - {r: 0.9924528, g: 0.09550016, b: 0.625781, a: 0}
-  - {r: 1, g: 0, b: 0.7096386, a: 1}
+  - {r: 1, g: 0, b: 0.7096386, a: 0.45490196}
   - {r: 0, g: 0, b: 1, a: 1}
   - {r: 0.06415099, g: 0.06377485, b: 0.059430443, a: 1}
   upgradeEffect: {fileID: 0}
+  scalablePart: {fileID: 8437077710104320262}
 --- !u!1 &4846203196028336108
 GameObject:
   m_ObjectHideFlags: 0
@@ -336,6 +338,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: dba1575f772cd9c4da227ccac97b8b9c, type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: dba1575f772cd9c4da227ccac97b8b9c, type: 3}
+      propertyPath: m_Materials.Array.data[1]
+      value: 
+      objectReference: {fileID: 2100000, guid: b563f68f118ab4d439f1bc027f7fbed1, type: 2}
     - target: {fileID: 919132149155446097, guid: dba1575f772cd9c4da227ccac97b8b9c, type: 3}
       propertyPath: m_Name
       value: weapon-turret

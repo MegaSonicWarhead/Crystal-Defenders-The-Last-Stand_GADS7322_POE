@@ -1,6 +1,7 @@
 using CrystalDefenders.Combat;
 using CrystalDefenders.Units;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class DefenderUpgradeHandler : MonoBehaviour, IUpgradeable
 {
@@ -8,38 +9,45 @@ public class DefenderUpgradeHandler : MonoBehaviour, IUpgradeable
     public int maxUpgradeTier = 3;
     public float healthMultiplierPerTier = 1.25f;
     public float damageMultiplierPerTier = 1.2f;
+    public float scaleIncrement = 0.5f;
 
     [Header("Visual Feedback")]
     public Color[] upgradeColors = { Color.clear, Color.green, Color.blue, Color.yellow }; // one per tier
     public ParticleSystem upgradeEffect;
+    public Transform scalablePart; // assign the visible weapon part
 
     private int currentTier = 0;
     private Health health;
     private AutoAttack autoAttack;
-    private Renderer rend;
-    private Color originalColor;
+    private Renderer[] renderers;
+    private List<Color> originalColors = new List<Color>();
+    private MaterialPropertyBlock propBlock;
+    private Vector3 baseScale;
 
     private void Awake()
     {
         health = GetComponent<Health>();
         autoAttack = GetComponent<AutoAttack>();
-        rend = GetComponentInChildren<Renderer>();
+        renderers = GetComponentsInChildren<Renderer>();
+        propBlock = new MaterialPropertyBlock();
 
-        if (rend != null)
+        // Store all original colors
+        foreach (var r in renderers)
         {
-            // Store original mesh color
-            if (rend.sharedMaterial.HasProperty("_BaseColor"))
-                originalColor = rend.sharedMaterial.GetColor("_BaseColor");
-            else if (rend.sharedMaterial.HasProperty("_Color"))
-                originalColor = rend.sharedMaterial.GetColor("_Color");
+            if (r.sharedMaterial.HasProperty("_BaseColor"))
+                originalColors.Add(r.sharedMaterial.GetColor("_BaseColor"));
+            else if (r.sharedMaterial.HasProperty("_Color"))
+                originalColors.Add(r.sharedMaterial.GetColor("_Color"));
             else
-                originalColor = Color.white;
-
-            // Set tier 0 to default
-            upgradeColors[0] = originalColor;
+                originalColors.Add(Color.white);
         }
 
-        // UI button setup
+        upgradeColors[0] = Color.clear; // no tint for tier 0
+
+        if (scalablePart != null)
+            baseScale = scalablePart.localScale;
+
+        // Attach upgrade button
         if (UIManager.Instance != null)
         {
             UIManager.Instance.AttachHealthBar(health);
@@ -60,43 +68,57 @@ public class DefenderUpgradeHandler : MonoBehaviour, IUpgradeable
 
         currentTier++;
 
-        // Scale stats
+        // --- Stat Scaling ---
         int newMaxHealth = Mathf.RoundToInt(health.MaxHealth * healthMultiplierPerTier);
         health.SetMaxHealth(newMaxHealth, true);
 
         if (autoAttack != null)
             autoAttack.damagePerHit = Mathf.RoundToInt(autoAttack.damagePerHit * damageMultiplierPerTier);
 
-        // Visual feedback
+        // --- Visuals ---
+        ScaleVisiblePart();
         UpdateVisuals();
         PlayUpgradeEffect();
     }
 
     public bool CanUpgrade() => currentTier < maxUpgradeTier;
 
+    private void ScaleVisiblePart()
+    {
+        if (scalablePart == null) return;
+        float scaleFactor = 1f + (currentTier * scaleIncrement);
+        scalablePart.localScale = baseScale * scaleFactor;
+    }
+
     private void UpdateVisuals()
     {
-        if (rend == null)
-            return;
+        if (renderers == null || renderers.Length == 0) return;
 
-        Color newColor = currentTier == 0 ? originalColor : upgradeColors[Mathf.Clamp(currentTier, 0, upgradeColors.Length - 1)];
+        Color tint = currentTier == 0 ? Color.clear : upgradeColors[Mathf.Clamp(currentTier, 0, upgradeColors.Length - 1)];
 
-        // Apply color directly to the existing material
-        if (rend.material.HasProperty("_BaseColor"))
-            rend.material.SetColor("_BaseColor", newColor);
-        else if (rend.material.HasProperty("_Color"))
-            rend.material.SetColor("_Color", newColor);
-
-        // Glow/emission for upgrades
-        if (rend.material.HasProperty("_EmissionColor"))
+        for (int i = 0; i < renderers.Length; i++)
         {
-            if (currentTier == 0)
-                rend.material.SetColor("_EmissionColor", Color.black);
-            else
+            var r = renderers[i];
+            if (r == null) continue;
+
+            r.GetPropertyBlock(propBlock);
+
+            Color newColor = originalColors[i] + tint * 0.4f;
+
+            if (r.sharedMaterial.HasProperty("_BaseColor"))
+                propBlock.SetColor("_BaseColor", newColor);
+            else if (r.sharedMaterial.HasProperty("_Color"))
+                propBlock.SetColor("_Color", newColor);
+
+            if (r.sharedMaterial.HasProperty("_EmissionColor"))
             {
-                rend.material.EnableKeyword("_EMISSION");
-                rend.material.SetColor("_EmissionColor", newColor * 1.5f);
+                if (currentTier == 0)
+                    propBlock.SetColor("_EmissionColor", Color.black);
+                else
+                    propBlock.SetColor("_EmissionColor", tint * 1.2f);
             }
+
+            r.SetPropertyBlock(propBlock);
         }
     }
 
