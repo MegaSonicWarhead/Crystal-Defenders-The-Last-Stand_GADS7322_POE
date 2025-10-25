@@ -4996,6 +4996,8 @@ MonoBehaviour:
   spawnIntervalAccelerationPerWave: -0.1
   earlyWaveSlowMultiplier: 1.5
   guaranteedCounterWave: 5
+  bossWaveInterval: 5
+  bossEnemyPrefab: {fileID: 0}
   waveText: {fileID: 1151600365}
 --- !u!4 &2134622247
 Transform:
