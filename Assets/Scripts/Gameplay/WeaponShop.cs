@@ -221,40 +221,40 @@ public class WeaponShop : MonoBehaviour
         var target = damaged[Random.Range(0, damaged.Count)];
         var health = target.GetComponent<Health>();
         health.RestoreFullHealth();
-        Debug.Log($"Repaired {target.name} for {Defender.RepairCost} resources.");
+        //Debug.Log($"Repaired {target.name} for {Defender.RepairCost} resources.");
     }
 
     private void OnUpgradeButton()
     {
         if (selectedTower == null)
         {
-            Debug.Log("No tower selected to upgrade.");
+            //Debug.Log("No tower selected to upgrade.");
             return;
         }
 
         var upgradeable = selectedTower.GetUpgradeable();
         if (upgradeable == null)
         {
-            Debug.Log("Selected object cannot be upgraded.");
+            //Debug.Log("Selected object cannot be upgraded.");
             return;
         }
 
         if (!upgradeable.CanUpgrade())
         {
-            Debug.Log("Selected tower is already max tier.");
+           // Debug.Log("Selected tower is already max tier.");
             return;
         }
 
         if (!UpgradeManager.Instance.CanAfford(100)) // Default cost handled inside handler if needed
         {
-            Debug.Log("Not enough resources to upgrade.");
+           // Debug.Log("Not enough resources to upgrade.");
             return;
         }
 
         UpgradeManager.Instance.SpendResources(100);
         upgradeable.ApplyUpgrade();
 
-        Debug.Log($"Upgraded {selectedTower.name} successfully!");
+       // Debug.Log($"Upgraded {selectedTower.name} successfully!");
     }
 
     public void SelectTower(SelectableTower newSelection)

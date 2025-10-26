@@ -9,6 +9,18 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 5b83e16d8665a1c46aa660be8d8a1009, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5b83e16d8665a1c46aa660be8d8a1009, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5b83e16d8665a1c46aa660be8d8a1009, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5b83e16d8665a1c46aa660be8d8a1009, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0
       objectReference: {fileID: 0}
@@ -50,10 +62,68 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 5b83e16d8665a1c46aa660be8d8a1009, type: 3}
       propertyPath: m_Name
-      value: enemy-ufo-b-weapon
+      value: Bossenemy
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5b83e16d8665a1c46aa660be8d8a1009, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2216006327272748118}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5b83e16d8665a1c46aa660be8d8a1009, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 112625872641381981}
   m_SourcePrefab: {fileID: 100100000, guid: 5b83e16d8665a1c46aa660be8d8a1009, type: 3}
+--- !u!1 &5043471376281413675 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 5b83e16d8665a1c46aa660be8d8a1009, type: 3}
+  m_PrefabInstance: {fileID: 5278055688438257018}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2216006327272748118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5043471376281413675}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76d11f1e40ab63b42a2c0eff0d69b4ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CrystalDefenders.Combat.Health
+  maxHealth: 100
+  requiredDamageTag: 
+  onDeath:
+    m_PersistentCalls:
+      m_Calls: []
+  onDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  onHealed:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &112625872641381981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5043471376281413675}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9458d3a62cba364489cb0d03dd80f347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CrystalDefenders.Units.BossEnemy
+  moveSpeed: 0.5
+  contactDamage: 10
+  attackRange: 5
+  attackCooldown: 1
+  lastAttackTime: -999
+  health: {fileID: 0}
+  baseHealth: 100
+  baseDamage: 25
+  baseMoveSpeed: 0.8
+  healthScalePerWave: 0.25
+  damageScalePerWave: 0.15
+  speedScalePerWave: 0.05

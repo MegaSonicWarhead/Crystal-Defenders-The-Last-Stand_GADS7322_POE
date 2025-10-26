@@ -73,7 +73,7 @@ namespace CrystalDefenders.Combat
         /// </summary>
         protected override void OnImpact(Vector3 hitPosition, Transform hitTarget)
         {
-            Debug.Log($"Fireball impact at {hitPosition} | damageTag={damageTag}");
+            //Debug.Log($"Fireball impact at {hitPosition} | damageTag={damageTag}");
 
             // Direct hit damage
             if (hitTarget != null)
@@ -95,7 +95,7 @@ namespace CrystalDefenders.Combat
                 var h = colliders[i].GetComponent<Health>();
                 if (h != null)
                 {
-                    Debug.Log($"Fireball splash hitting {h.gameObject.name} | damageTag={damageTag} | enemy requiredTag={h.requiredDamageTag}");
+                    //Debug.Log($"Fireball splash hitting {h.gameObject.name} | damageTag={damageTag} | enemy requiredTag={h.requiredDamageTag}");
 
                     if (!string.IsNullOrEmpty(damageTag))
                         h.ApplyDamage(splashDamage, damageTag);

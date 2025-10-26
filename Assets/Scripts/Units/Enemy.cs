@@ -35,7 +35,7 @@ namespace CrystalDefenders.Units
         public float lastAttackTime = -999f;
 
         // Reference to this enemy's health component
-        private Health health;
+        public Health health;
 
         // Flag to ensure death logic is triggered only once
         private bool isDead = false;
