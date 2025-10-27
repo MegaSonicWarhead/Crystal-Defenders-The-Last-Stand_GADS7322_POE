@@ -60,6 +60,11 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -81,6 +86,7 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
@@ -126,3 +132,5 @@ MonoBehaviour:
   splashDamage: 10
   arcHeight: 2.5
   projectileSpeed: 12
+  travelParticles: {fileID: 2608492970495742701, guid: 5500acce28bd35449b29bb7786308b1f, type: 3}
+  impactVFXPrefab: {fileID: 3300520380504534215, guid: 1f45bb9bdf3401549aa47eb3f2030b75, type: 3}

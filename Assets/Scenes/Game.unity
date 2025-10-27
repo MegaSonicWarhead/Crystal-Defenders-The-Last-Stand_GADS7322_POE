@@ -1778,6 +1778,7 @@ MonoBehaviour:
   flatteningRadius: 0
   flatteningStrength: 0
   flatteningIterations: 0
+  runtimeMeshCollider: {fileID: 0}
 --- !u!1 &877289022
 GameObject:
   m_ObjectHideFlags: 0
@@ -1911,6 +1912,7 @@ GameObject:
   - component: {fileID: 963194227}
   - component: {fileID: 963194226}
   - component: {fileID: 963194229}
+  - component: {fileID: 963194230}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -2009,6 +2011,20 @@ MonoBehaviour:
   lookSensitivity: 2
   invertY: 0
   lookKey: 324
+--- !u!114 &963194230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 963194225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4db2ac899eba4bd4c848e44c32cd5b32, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LowHealthPostEffect
+  intensity: 0
+  tintColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1 &976655871
 GameObject:
   m_ObjectHideFlags: 0
