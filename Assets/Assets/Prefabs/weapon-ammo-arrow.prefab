@@ -22,7 +22,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0c55db05dd539fa41a4a522c6d2e29c1, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.8660254
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0c55db05dd539fa41a4a522c6d2e29c1, type: 3}
       propertyPath: m_LocalRotation.x
@@ -30,11 +30,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0c55db05dd539fa41a4a522c6d2e29c1, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0c55db05dd539fa41a4a522c6d2e29c1, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0c55db05dd539fa41a4a522c6d2e29c1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -42,12 +42,20 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0c55db05dd539fa41a4a522c6d2e29c1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: 60
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0c55db05dd539fa41a4a522c6d2e29c1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 0c55db05dd539fa41a4a522c6d2e29c1, type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 0c55db05dd539fa41a4a522c6d2e29c1, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 6c935722a90d017459e5a4a03a3a56fa, type: 2}
     - target: {fileID: 919132149155446097, guid: 0c55db05dd539fa41a4a522c6d2e29c1, type: 3}
       propertyPath: m_Name
       value: weapon-ammo-arrow
@@ -88,3 +96,12 @@ MonoBehaviour:
   poisonTickDamage: 2
   poisonTickInterval: 0.5
   poisonDuration: 4
+  projectileRenderer: {fileID: 1490334846758131808}
+  colorTransitionSpeed: 2
+  baseColor: {r: 0.16470589, g: 0.16470589, b: 0.16470589, a: 1}
+  poisonColor: {r: 0, g: 1, b: 0, a: 1}
+--- !u!23 &1490334846758131808 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: 0c55db05dd539fa41a4a522c6d2e29c1, type: 3}
+  m_PrefabInstance: {fileID: 247467101185705188}
+  m_PrefabAsset: {fileID: 0}

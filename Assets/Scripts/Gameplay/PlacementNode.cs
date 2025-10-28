@@ -51,37 +51,54 @@ namespace CrystalDefenders.Gameplay
         /// <returns>True if placement succeeded, false otherwise.</returns>
         public bool TryPlaceDefender()
         {
-            if (occupied) return false;                       // Node already occupied
-            if (!WeaponShop.Instance.HasDefenderToPlace) return false; // No defender selected in shop
+            if (occupied) return false;                                    // Node already occupied
+            if (!WeaponShop.Instance.HasDefenderToPlace) return false;     // No defender selected
 
-            // Determine which prefab to place (shop selection overrides default)
+            // Determine prefab to place
             var prefab = WeaponShop.Instance.SelectedDefenderPrefab != null
                 ? WeaponShop.Instance.SelectedDefenderPrefab
                 : defenderPrefab;
 
-            if (prefab == null) return false;                // No valid prefab available
+            if (prefab == null) return false;                              // No valid prefab
 
-            // Instantiate the defender at this node
-            var instance = Instantiate(prefab, transform.position, Quaternion.identity);
+            // Instantiate above the node (arbitrary height to avoid immediate collisions)
+            var instance = Instantiate(prefab, transform.position + Vector3.up * 6f, Quaternion.identity);
 
-            // Snap defender to terrain height to prevent sinking/floating
-            Vector3 probeStart = instance.transform.position + Vector3.up * 5f;
+            // Disable all colliders temporarily
+            Collider[] cols = instance.GetComponentsInChildren<Collider>();
+            foreach (var c in cols) c.enabled = false;
+
+            // Cast a ray downward to find terrain
+            Vector3 probeStart = transform.position + Vector3.up * 10f;
             if (Physics.Raycast(probeStart, Vector3.down, out RaycastHit hit, 50f))
             {
-                instance.transform.position = hit.point;
+                Vector3 finalPosition = hit.point;
+
+                // Compute lowest point of all colliders relative to pivot
+                float lowestLocal = float.MaxValue;
+                foreach (var c in cols)
+                {
+                    float localBottom = c.bounds.min.y - instance.transform.position.y;
+                    if (localBottom < lowestLocal) lowestLocal = localBottom;
+                }
+
+                // Move defender down so bottom sits on terrain
+                finalPosition.y -= lowestLocal;
+                instance.transform.position = finalPosition;
             }
 
-            // Link the defender to this node for future reference
+            // Re-enable colliders
+            foreach (var c in cols) c.enabled = true;
+
+            // Assign node reference to defender
             if (instance.TryGetComponent(out Defender defender))
-            {
                 defender.OriginNode = this;
-            }
 
-            // Mark node as occupied and notify WeaponShop
+            // Mark node as occupied and notify shop
             occupied = true;
             WeaponShop.Instance.OnDefenderPlaced();
 
-            // Hide the node while occupied to prevent re-placement
+            // Optionally hide node to prevent re-placement
             gameObject.SetActive(false);
 
             return true;
