@@ -9,7 +9,7 @@ namespace CrystalDefenders.Units
     /// </summary>
     [RequireComponent(typeof(Defender))]
     [RequireComponent(typeof(AutoAttack))]
-    [RequireComponent(typeof(GroundAnchor))]
+    //[RequireComponent(typeof(GroundAnchor))]
     public class FireMageConfig : MonoBehaviour
     {
         [Header("Fire Mage Settings")]

@@ -172,7 +172,7 @@ namespace CrystalDefenders.Gameplay
 
             var spawner = spawners[Random.Range(0, spawners.Count)];
             var bossInstance = Instantiate(bossEnemyPrefab, spawner.transform.position, Quaternion.identity);
-            bossInstance.ConfigureAdaptiveStats(diff, defenderHealthFactor, currentWave);
+            bossInstance.ConfigureProceduralStats(diff, defenderHealthFactor, currentWave);
 
             var h = bossInstance.GetComponent<Health>();
             if (h != null)

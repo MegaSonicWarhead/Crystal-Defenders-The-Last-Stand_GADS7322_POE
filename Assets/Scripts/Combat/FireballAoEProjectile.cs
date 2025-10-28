@@ -1,4 +1,6 @@
 using CrystalDefenders.Generation;
+using CrystalDefenders.Units;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,6 +20,7 @@ namespace CrystalDefenders.Combat
         [Header("Visual Effects")]
         [SerializeField] private ParticleSystem travelParticles; // optional child PS for flight
         [SerializeField] private GameObject impactVFXPrefab;     // prefab to spawn at impact
+        [SerializeField] private Material shockwaveMaterial;
 
         private Vector3 startPosition;
         private Vector3 targetSnapshot;
@@ -75,13 +78,36 @@ namespace CrystalDefenders.Combat
             }
         }
 
+
+        //private IEnumerator AnimateShockwave(Material mat)
+        //{
+        //    float duration = 0.5f;
+        //    float t = 0f;
+        //    while (t < 1f)
+        //    {
+        //        mat.SetFloat("_Height", Mathf.Lerp(1f, 0f, t));
+        //        t += Time.deltaTime / duration;
+        //        yield return null;
+        //    }
+        //    mat.SetFloat("_Height", 0f);
+        //}
+
         protected override void OnImpact(Vector3 hitPosition, Transform hitTarget)
         {
+
+            //base.OnImpact(hitPosition, hitTarget);
+
+            //if (shockwaveMaterial != null)
+            //{
+            //    shockwaveMaterial.SetVector("_ImpactPosition", hitPosition);
+            //    StartCoroutine(AnimateShockwave(shockwaveMaterial));
+            //}
+
+
             // Stop travel particles
             if (travelParticles != null)
             {
                 travelParticles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-                // detach so the fade-out can finish even after projectile destroy
                 travelParticles.transform.SetParent(null);
                 Destroy(travelParticles.gameObject, 2f);
             }
@@ -108,10 +134,17 @@ namespace CrystalDefenders.Combat
                 var h = hitTarget.GetComponent<Health>();
                 if (h != null)
                 {
+                    int finalDamage = damage;
+
+                    // Check for boss fire resistance
+                    var boss = h.GetComponent<BossEnemy>();
+                    if (boss != null && boss.AssignedAbility == BossEnemy.BossAbility.FireResist)
+                        finalDamage = Mathf.RoundToInt(finalDamage * 0.5f); // 50% reduction
+
                     if (!string.IsNullOrEmpty(damageTag))
-                        h.ApplyDamage(damage, damageTag);
+                        h.ApplyDamage(finalDamage, damageTag);
                     else
-                        h.ApplyDamage(damage);
+                        h.ApplyDamage(finalDamage);
                 }
             }
 
@@ -122,20 +155,26 @@ namespace CrystalDefenders.Combat
                 var h = colliders[i].GetComponent<Health>();
                 if (h != null)
                 {
+                    int finalSplashDamage = splashDamage;
+
+                    // Check for boss fire resistance
+                    var boss = h.GetComponent<BossEnemy>();
+                    if (boss != null && boss.AssignedAbility == BossEnemy.BossAbility.FireResist)
+                        finalSplashDamage = Mathf.RoundToInt(finalSplashDamage * 0.5f);
+
                     if (!string.IsNullOrEmpty(damageTag))
-                        h.ApplyDamage(splashDamage, damageTag);
+                        h.ApplyDamage(finalSplashDamage, damageTag);
                     else
-                        h.ApplyDamage(splashDamage);
+                        h.ApplyDamage(finalSplashDamage);
                 }
             }
 
-            // find generators near impact and apply shock
+            // Shockwave on terrain
             var generators = FindObjectsOfType<ProceduralTerrainGenerator>();
             foreach (var gen in generators)
             {
-                // optionally check distance to hub or bounding box to avoid calling distant terrains
-                float radius = explosionRadius; // or a different visual radius
-                float strength = 0.5f; // vertical displacement in world units — tweak (0.2 - 2.0 typical)
+                float radius = explosionRadius;
+                float strength = 0.5f;
                 float duration = 0.9f;
                 gen.ApplyShockwave(hitPosition, radius, strength, duration, restore: true);
             }

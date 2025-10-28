@@ -49,25 +49,35 @@ namespace CrystalDefenders.Combat
 
         private void Update()
         {
-            if (target == null) return;
-
-            // Move toward the target
-            transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
-
-            // Rotate to face the target
-            Vector3 dir = (target.position - transform.position).normalized;
-            if (dir != Vector3.zero)
-                transform.rotation = Quaternion.LookRotation(dir); // assumes arrow points +Z
-
-            // Check if the arrow has reached the target
-            if (Vector3.Distance(transform.position, target.position) <= 0.1f)
+            if (target == null || !target.gameObject.activeInHierarchy)
             {
-                Health targetHealth = target.GetComponent<Health>();
-                if (targetHealth != null)
-                    OnHit(targetHealth);
-
-                Destroy(gameObject); // Remove arrow after hitting
+                Destroy(gameObject); // auto-cleanup if target is gone
+                return;
             }
+
+            Vector3 direction = (target.position - transform.position).normalized;
+            float distanceThisFrame = speed * Time.deltaTime;
+
+            // Check if we will overshoot the target this frame
+            if (Vector3.Distance(transform.position, target.position) <= distanceThisFrame)
+            {
+                HitTarget();
+                return;
+            }
+
+            // Move and rotate
+            transform.position += direction * distanceThisFrame;
+            if (direction != Vector3.zero)
+                transform.rotation = Quaternion.LookRotation(direction);
+        }
+
+        private void HitTarget()
+        {
+            Health targetHealth = target.GetComponent<Health>();
+            if (targetHealth != null)
+                OnHit(targetHealth);
+
+            Destroy(gameObject);
         }
 
         private void Reset()
@@ -79,10 +89,17 @@ namespace CrystalDefenders.Combat
         {
             if (health == null || !gameObject.activeInHierarchy) return;
 
+            int finalDamage = damage;
+
+            // Boss poison resistance
+            var boss = health.GetComponent<BossEnemy>();
+            if (boss != null && boss.AssignedAbility == BossEnemy.BossAbility.PoisonResist)
+                finalDamage = Mathf.RoundToInt(finalDamage * 0.5f);
+
             if (!string.IsNullOrEmpty(damageTag))
-                health.ApplyDamage(damage, damageTag);
+                health.ApplyDamage(finalDamage, damageTag);
             else
-                health.ApplyDamage(damage);
+                health.ApplyDamage(finalDamage);
 
             StartCoroutine(ApplyPoison(health));
 

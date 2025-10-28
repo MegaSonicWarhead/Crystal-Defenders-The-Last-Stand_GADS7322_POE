@@ -1,6 +1,7 @@
 ﻿using CrystalDefenders.Combat;
 using CrystalDefenders.Generation;
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace CrystalDefenders.Units
@@ -19,8 +20,27 @@ namespace CrystalDefenders.Units
         [SerializeField] private float damageScalePerWave = 0.15f;
         [SerializeField] private float speedScalePerWave = 0.05f;
 
-        // Boss path points assigned externally
+        [Header("Procedural Variance (randomized per boss)")]
+        [SerializeField] private float healthVariance = 0.15f;
+        [SerializeField] private float damageVariance = 0.10f;
+        [SerializeField] private float speedVariance = 0.10f;
+
+        [Header("Procedural Abilities")]
+        [SerializeField] private BossAbility assignedAbility = BossAbility.None;
+        public BossAbility AssignedAbility => assignedAbility;
+
+        public enum BossAbility
+        {
+            None,
+            FireResist,
+            PoisonResist,
+            SpeedBoost,
+            LifeSteal,
+            Regeneration
+        }
+
         private List<Vector3> bossPath;
+        public System.Action<int> OnDealDamage;
 
         private void Awake()
         {
@@ -33,29 +53,19 @@ namespace CrystalDefenders.Units
 
         private void Start()
         {
-            // Auto-assign a path if not already set
             if (bossPath == null || bossPath.Count == 0)
             {
                 var generator = FindObjectOfType<ProceduralTerrainGenerator>();
                 if (generator != null && generator.PathWaypoints.Count > 0)
                 {
-                    // Convert IReadOnlyList<Vector3> to List<Vector3>
-                    var pathList = new List<Vector3>(generator.PathWaypoints[0]);
-                    SetBossPath(pathList); // Now it works
+                    SetBossPath(new List<Vector3>(generator.PathWaypoints[0]));
                 }
             }
 
-            // Attach health bar on spawn
             if (UIManager.Instance != null && health != null)
-            {
                 UIManager.Instance.AttachHealthBar(health);
-            }
         }
 
-        /// <summary>
-        /// Assigns the path for the boss to follow.
-        /// Must be called after instantiation if using custom paths.
-        /// </summary>
         public void SetBossPath(List<Vector3> pathPoints)
         {
             if (pathPoints == null || pathPoints.Count == 0)
@@ -65,17 +75,11 @@ namespace CrystalDefenders.Units
             }
 
             bossPath = pathPoints;
-
-            // Move boss to the start of the path immediately
             transform.position = bossPath[0];
-
-            SetPath(bossPath); // Calls Enemy.SetPath to move along these waypoints
+            SetPath(bossPath);
         }
 
-        /// <summary>
-        /// Configure adaptive boss stats based on difficulty, defender health, and wave.
-        /// </summary>
-        public void ConfigureAdaptiveStats(float difficultyMultiplier, float defenderHealthFactor, int wave)
+        public void ConfigureProceduralStats(float difficultyMultiplier, float defenderHealthFactor, int wave)
         {
             if (health == null)
                 health = GetComponent<Health>();
@@ -91,11 +95,59 @@ namespace CrystalDefenders.Units
                 baseMoveSpeed * (1f + wave * speedScalePerWave) * Mathf.Lerp(0.8f, 1.4f, difficultyMultiplier - 0.8f),
                 0.6f, 2.0f);
 
-            health.SetMaxHealth(scaledHealth, true);
-            contactDamage = scaledDamage;
-            moveSpeed = scaledSpeed;
+            float healthMult = Random.Range(1f - healthVariance, 1f + healthVariance);
+            float damageMult = Random.Range(1f - damageVariance, 1f + damageVariance);
+            float speedMult = Random.Range(1f - speedVariance, 1f + speedVariance);
 
-            Debug.Log($"[BossEnemy] Initialized | Wave={wave} | HP={scaledHealth} | DMG={scaledDamage} | SPD={scaledSpeed:F2}");
+            int finalHealth = Mathf.RoundToInt(scaledHealth * healthMult);
+            int finalDamage = Mathf.RoundToInt(scaledDamage * damageMult);
+            float finalSpeed = scaledSpeed * speedMult;
+
+            health.SetMaxHealth(finalHealth, true);
+            contactDamage = finalDamage;
+            moveSpeed = finalSpeed;
+
+            AssignRandomAbility();
+
+            Debug.Log($"[BossEnemy] Procedural Init | Wave={wave} | HP={finalHealth} | DMG={finalDamage} | SPD={finalSpeed:F2} | Ability={assignedAbility}");
+        }
+
+        private void AssignRandomAbility()
+        {
+            var values = System.Enum.GetValues(typeof(BossAbility));
+            assignedAbility = (BossAbility)values.GetValue(Random.Range(0, values.Length));
+
+            switch (assignedAbility)
+            {
+                case BossAbility.FireResist:
+                    break;
+                case BossAbility.PoisonResist:
+                    break;
+                case BossAbility.SpeedBoost:
+                    moveSpeed *= 1.3f;
+                    break;
+                case BossAbility.LifeSteal:
+                    OnDealDamage += LifeStealHandler;
+                    break;
+                case BossAbility.Regeneration:
+                    StartCoroutine(RegenerationRoutine());
+                    break;
+            }
+        }
+
+        private void LifeStealHandler(int damage)
+        {
+            if (health != null)
+                health.Heal(Mathf.RoundToInt(damage * 0.2f));
+        }
+
+        private IEnumerator RegenerationRoutine()
+        {
+            while (health != null && health.CurrentHealth > 0)
+            {
+                health.Heal(5);
+                yield return new WaitForSeconds(2f);
+            }
         }
 
         private void OnBossDeath()
@@ -112,7 +164,7 @@ namespace CrystalDefenders.Units
                 return;
             }
 
-            base.Update(); // Moves along the assigned path
+            base.Update();
         }
     }
 }

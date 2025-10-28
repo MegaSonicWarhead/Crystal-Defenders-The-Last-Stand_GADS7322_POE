@@ -425,17 +425,9 @@ MonoBehaviour:
   fireMageButton: {fileID: 232835920}
   repairButton: {fileID: 1185894822}
   upgradeButton: {fileID: 1707705129}
-  buyNodeButton: {fileID: 1126842867}
   defaultDefenderPrefab: {fileID: 7260311678903122510, guid: e7978aa90af139f47941f4f7d8f13453, type: 3}
   poisonArcherPrefab: {fileID: 8233544817078603142, guid: 33dc530f207e8e54c9a789b3eaf04927, type: 3}
   fireMagePrefab: {fileID: 3660406141051845494, guid: 8bf7e8341a2c69c42a9fc0f3981efd61, type: 3}
-  placementNodePrefab: {fileID: 6326495757445937941, guid: 5758acf4dd1028f41ace71d991081e0f, type: 3}
-  placementNodeCost: 100
-  previewMaterial: {fileID: 2100000, guid: 37dd7ba66469b9d478cd5913cd059eb0, type: 2}
-  gridSize: 1
-  placementLayer:
-    serializedVersion: 2
-    m_Bits: 0
   poisonArcherCost: 150
   fireMageCost: 200
 --- !u!1 &232835918
@@ -2971,7 +2963,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1126842866
 RectTransform:
   m_ObjectHideFlags: 0
