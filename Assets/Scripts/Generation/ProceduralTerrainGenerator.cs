@@ -95,117 +95,54 @@ using UnityEngine;
         /// <param name="maxStrength">Maximum vertical displacement (units).</param>
         /// <param name="duration">Time in seconds for the animated pulse (decays).</param>
         /// <param name="restore">If true, vertices will lerp back to original after effect.</param>
-        public void ApplyShockwave(Vector3 worldCenter, float radius, float maxStrength, float duration = 1f, bool restore = false)
+        public void ApplyShockwave(Vector3 worldCenter, float radius, float strength, float duration, bool restore = true)
         {
-            EnsureRuntimeMeshInstance();
-            StopAllCoroutines(); // optional: you may want multiple shockwaves — remove if you want layering
-            StartCoroutine(ShockwaveCoroutine(worldCenter, radius, maxStrength, duration, restore));
+            // Get or instantiate a material with a displacement-capable shader
+            MeshRenderer mr = GetComponent<MeshRenderer>();
+            if (mr == null) return;
+
+            Material mat = mr.material; // automatically instantiates a unique instance at runtime
+
+            if (mat.shader.name != "CrystalDefenders/TerrainShockwave")
+            {
+                Shader shader = Shader.Find("CrystalDefenders/TerrainShockwave");
+                if (shader == null)
+                {
+                    Debug.LogWarning("TerrainShockwave shader not found!");
+                    return;
+                }
+
+                Material newMat = new Material(shader);
+                // Preserve the existing terrain texture
+                if (mat.HasProperty("_MainTex"))
+                    newMat.mainTexture = mat.mainTexture;
+                mr.material = newMat;
+                mat = newMat;
+            }
+
+            // Set shockwave parameters
+            mat.SetVector("_ShockwaveCenter", new Vector4(worldCenter.x, worldCenter.y, worldCenter.z, 1));
+            mat.SetFloat("_ShockwaveRadius", radius);
+
+            // Start the coroutine to animate the shockwave
+            StartCoroutine(ShockwaveRoutine(mat, strength, duration, restore));
         }
 
-        private IEnumerator ShockwaveCoroutine(Vector3 worldCenter, float radius, float maxStrength, float duration, bool restore)
+        private IEnumerator ShockwaveRoutine(Material mat, float maxStrength, float duration, bool restore)
         {
-            if (runtimeMesh == null || originalVertices == null) yield break;
-
-            // Convert center to local/object space of the mesh (mesh vertices are in local coordinates)
-            Vector3 localCenter = transform.InverseTransformPoint(worldCenter);
-
-            // Precompute vertex XY (x,z)
-            int vcount = originalVertices.Length;
-            var vertexXZ = new Vector2[vcount];
-            for (int i = 0; i < vcount; i++)
-                vertexXZ[i] = new Vector2(originalVertices[i].x, originalVertices[i].z);
-
             float elapsed = 0f;
 
-            // We'll store displacements so multiple waves could be combined later (simple approach: overwrite)
             while (elapsed < duration)
             {
                 float t = elapsed / duration;
-                // Envelope: quick rise + exponential decay (t in [0..1])
-                float envelope = Mathf.Sin(t * Mathf.PI) * Mathf.Pow(1f - t, 2f); // pulse then decay
-
-                // We also can simulate an outward traveling ring by making a phase based on distance.
-                for (int i = 0; i < vcount; i++)
-                {
-                    // compute planar distance from center (XZ)
-                    float dx = vertexXZ[i].x - localCenter.x;
-                    float dz = vertexXZ[i].y - localCenter.z;
-                    float dist = Mathf.Sqrt(dx * dx + dz * dz);
-
-                    if (dist > radius)
-                    {
-                        // outside wave radius -> return original
-                        workingVertices[i].x = originalVertices[i].x;
-                        workingVertices[i].z = originalVertices[i].z;
-                        workingVertices[i].y = originalVertices[i].y;
-                        continue;
-                    }
-
-                    // normalized distance 0 at center, 1 at radius
-                    float nd = dist / Mathf.Max(0.0001f, radius);
-                    // radial falloff: stronger near ring edge; tweak curve as desired
-                    float falloff = 1f - Mathf.SmoothStep(0f, 1f, nd);
-
-                    // create ring effect: phase shifts so max at a thin ring
-                    // ringFactor peaks when nd is around some ring position (e.g. 0.6)
-                    float ringPos = Mathf.Lerp(0.2f, 0.9f, t); // ring travels outward with time
-                    float ringWidth = 0.15f;
-                    float ringFactor = Mathf.Exp(-Mathf.Pow((nd - ringPos) / ringWidth, 2f));
-
-                    // final vertical displacement
-                    float displacement = envelope * falloff * ringFactor * maxStrength;
-
-                    // Optionally push down at center and up at ring or vice versa; keep vertical only
-                    workingVertices[i].x = originalVertices[i].x;
-                    workingVertices[i].z = originalVertices[i].z;
-                    workingVertices[i].y = originalVertices[i].y + displacement;
-                }
-
-                // Update mesh
-                runtimeMesh.vertices = workingVertices;
-                runtimeMesh.RecalculateNormals();
-                runtimeMesh.RecalculateBounds();
-                if (runtimeMeshCollider != null)
-                    runtimeMeshCollider.sharedMesh = runtimeMesh; // update collider (can be costly)
-
+                float currentStrength = Mathf.Sin(t * Mathf.PI); // smooth pulse
+                mat.SetFloat("_ShockwaveStrength", currentStrength * maxStrength);
                 elapsed += Time.deltaTime;
                 yield return null;
             }
 
-            // End of pulse: either restore or keep modified terrain
             if (restore)
-            {
-                // smoothly restore over 0.7s
-                float restoreTime = 0.7f;
-                float rr = 0f;
-                while (rr < restoreTime)
-                {
-                    float ft = rr / restoreTime;
-                    for (int i = 0; i < vcount; i++)
-                    {
-                        workingVertices[i].x = originalVertices[i].x;
-                        workingVertices[i].z = originalVertices[i].z;
-                        // lerp current y back to original
-                        workingVertices[i].y = Mathf.Lerp(workingVertices[i].y, originalVertices[i].y, ft);
-                    }
-
-                    runtimeMesh.vertices = workingVertices;
-                    runtimeMesh.RecalculateNormals();
-                    runtimeMesh.RecalculateBounds();
-                    if (runtimeMeshCollider != null)
-                        runtimeMeshCollider.sharedMesh = runtimeMesh;
-
-                    rr += Time.deltaTime;
-                    yield return null;
-                }
-
-                // final snap
-                runtimeMesh.vertices = originalVertices;
-                runtimeMesh.RecalculateNormals();
-                runtimeMesh.RecalculateBounds();
-                if (runtimeMeshCollider != null)
-                    runtimeMeshCollider.sharedMesh = runtimeMesh;
-            }
+                mat.SetFloat("_ShockwaveStrength", 0);
         }
 
         private void Awake()

@@ -134,4 +134,4 @@ MonoBehaviour:
   projectileSpeed: 12
   travelParticles: {fileID: 2608492970495742701, guid: 5500acce28bd35449b29bb7786308b1f, type: 3}
   impactVFXPrefab: {fileID: 3300520380504534215, guid: 1f45bb9bdf3401549aa47eb3f2030b75, type: 3}
-  shockwaveMaterial: {fileID: 2100000, guid: c9062cd6948243542ac9183d3200d391, type: 2}
+  shockwaveMaterial: {fileID: 2100000, guid: 4481084c01f3eca48b28bfef572998e6, type: 2}
