@@ -10,44 +10,40 @@ namespace CrystalDefenders.Units
     [RequireComponent(typeof(Health))]
     public class BossEnemy : Enemy
     {
-        [Header("Base Boss Stats (used for scaling, not runtime health)")]
+        [Header("Base Boss Stats")]
         [SerializeField] private int baseHealth = 500;
         [SerializeField] private int baseDamage = 25;
         [SerializeField] private float baseMoveSpeed = 0.8f;
 
-        [Header("Adaptive Scaling Factors")]
+        [Header("Scaling Factors")]
         [SerializeField] private float healthScalePerWave = 0.25f;
         [SerializeField] private float damageScalePerWave = 0.15f;
         [SerializeField] private float speedScalePerWave = 0.05f;
 
-        [Header("Procedural Variance (randomized per boss)")]
+        [Header("Procedural Variance")]
         [SerializeField] private float healthVariance = 0.15f;
         [SerializeField] private float damageVariance = 0.10f;
         [SerializeField] private float speedVariance = 0.10f;
 
-        [Header("Procedural Abilities")]
-        [SerializeField] private BossAbility assignedAbility = BossAbility.None;
-        public BossAbility AssignedAbility => assignedAbility;
-
-        public enum BossAbility
-        {
-            None,
-            FireResist,
-            PoisonResist,
-            SpeedBoost,
-            LifeSteal,
-            Regeneration
-        }
+        [Header("Archetype & Abilities")]
+        [SerializeField] private BossArchetype archetype = BossArchetype.None;
+        [SerializeField] private List<BossAbility> abilities = new();
+        private readonly Dictionary<BossAbility, int> abilityLevels = new();
 
         private List<Vector3> bossPath;
+        // 🔹 No serialized 'health' field here — inherited from Enemy.
         public System.Action<int> OnDealDamage;
+
+        public enum BossAbility { None, FireResist, PoisonResist, SpeedBoost, LifeSteal, Regeneration }
+        public enum BossArchetype { None, Tank, Berserker, Vampire, Mutant, Elemental }
 
         private void Awake()
         {
-            health = GetComponent<Health>();
+            // use inherited field
             if (health == null)
-                Debug.LogError("[BossEnemy] Missing Health component!");
-            else
+                health = GetComponent<Health>();
+
+            if (health != null)
                 health.onDeath.AddListener(OnBossDeath);
         }
 
@@ -57,9 +53,7 @@ namespace CrystalDefenders.Units
             {
                 var generator = FindObjectOfType<ProceduralTerrainGenerator>();
                 if (generator != null && generator.PathWaypoints.Count > 0)
-                {
                     SetBossPath(new List<Vector3>(generator.PathWaypoints[0]));
-                }
             }
 
             if (UIManager.Instance != null && health != null)
@@ -68,102 +62,191 @@ namespace CrystalDefenders.Units
 
         public void SetBossPath(List<Vector3> pathPoints)
         {
-            if (pathPoints == null || pathPoints.Count == 0)
+            bossPath = pathPoints ?? new List<Vector3>();
+            if (bossPath.Count > 0)
             {
-                Debug.LogError("[BossEnemy] Invalid path assigned!");
-                return;
+                transform.position = bossPath[0];
+                SetPath(bossPath);
             }
-
-            bossPath = pathPoints;
-            transform.position = bossPath[0];
-            SetPath(bossPath);
         }
+
+        public bool HasAbility(BossAbility ability) =>
+            abilities != null && abilities.Contains(ability);
 
         public void ConfigureProceduralStats(float difficultyMultiplier, float defenderHealthFactor, int wave)
         {
-            if (health == null)
-                health = GetComponent<Health>();
+            if (health == null) health = GetComponent<Health>();
 
             int scaledHealth = Mathf.RoundToInt(baseHealth * (1f + wave * healthScalePerWave) * Mathf.Pow(difficultyMultiplier, 1.25f));
+            int scaledDamage = Mathf.RoundToInt(baseDamage * (1f + wave * damageScalePerWave) * difficultyMultiplier);
+            float scaledSpeed = Mathf.Clamp(baseMoveSpeed * (1f + wave * speedScalePerWave), 0.6f, 2.0f);
 
-            float pressureAdj = defenderHealthFactor >= 0.8f ? 1.3f :
-                                defenderHealthFactor >= 0.6f ? 1.0f : 0.7f;
+            scaledHealth = Mathf.RoundToInt(scaledHealth * Random.Range(1f - healthVariance, 1f + healthVariance));
+            scaledDamage = Mathf.RoundToInt(scaledDamage * Random.Range(1f - damageVariance, 1f + damageVariance));
+            scaledSpeed *= Random.Range(1f - speedVariance, 1f + speedVariance);
 
-            int scaledDamage = Mathf.RoundToInt(baseDamage * (1f + wave * damageScalePerWave) * difficultyMultiplier * pressureAdj);
+            health.SetMaxHealth(scaledHealth, true);
+            contactDamage = scaledDamage;
+            moveSpeed = scaledSpeed;
 
-            float scaledSpeed = Mathf.Clamp(
-                baseMoveSpeed * (1f + wave * speedScalePerWave) * Mathf.Lerp(0.8f, 1.4f, difficultyMultiplier - 0.8f),
-                0.6f, 2.0f);
+            archetype = ChooseArchetype();
+            AssignProceduralAbilities();
 
-            float healthMult = Random.Range(1f - healthVariance, 1f + healthVariance);
-            float damageMult = Random.Range(1f - damageVariance, 1f + damageVariance);
-            float speedMult = Random.Range(1f - speedVariance, 1f + speedVariance);
-
-            int finalHealth = Mathf.RoundToInt(scaledHealth * healthMult);
-            int finalDamage = Mathf.RoundToInt(scaledDamage * damageMult);
-            float finalSpeed = scaledSpeed * speedMult;
-
-            health.SetMaxHealth(finalHealth, true);
-            contactDamage = finalDamage;
-            moveSpeed = finalSpeed;
-
-            AssignRandomAbility();
-
-            Debug.Log($"[BossEnemy] Procedural Init | Wave={wave} | HP={finalHealth} | DMG={finalDamage} | SPD={finalSpeed:F2} | Ability={assignedAbility}");
+            Debug.Log($"[BossEnemy] Wave {wave} | Archetype={archetype} | HP={scaledHealth} | DMG={scaledDamage} | SPD={scaledSpeed:F2}");
         }
 
-        private void AssignRandomAbility()
+        private BossArchetype ChooseArchetype()
         {
-            var values = System.Enum.GetValues(typeof(BossAbility));
-            assignedAbility = (BossAbility)values.GetValue(Random.Range(0, values.Length));
+            float h = healthVariance, d = damageVariance, s = speedVariance;
+            var rolls = new Dictionary<BossArchetype, float>
+            {
+                { BossArchetype.Tank, h * 2.0f },
+                { BossArchetype.Berserker, d * 1.8f },
+                { BossArchetype.Vampire, h * 1.2f + d * 1.2f },
+                { BossArchetype.Mutant, s * 1.5f },
+                { BossArchetype.Elemental, (h + d + s) / 3f }
+            };
 
-            switch (assignedAbility)
+            float total = 0f; foreach (var r in rolls) total += r.Value;
+            float pick = Random.Range(0f, total);
+            float cumulative = 0f;
+            foreach (var r in rolls)
+            {
+                cumulative += r.Value;
+                if (pick <= cumulative) return r.Key;
+            }
+            return BossArchetype.None;
+        }
+
+        private void AssignProceduralAbilities()
+        {
+            // 🔹 Randomly decide how many abilities this boss will have (1–5)
+            int abilityCount = Random.Range(1, 6);
+            abilities.Clear();
+            abilityLevels.Clear();
+
+            // Weighted chance based on archetype (same as before)
+            var weightedAbilities = new Dictionary<BossAbility, float>
+    {
+        { BossAbility.FireResist,   archetype == BossArchetype.Elemental ? 2f : 1f },
+        { BossAbility.PoisonResist, archetype == BossArchetype.Mutant ? 2f : 1f },
+        { BossAbility.SpeedBoost,   archetype == BossArchetype.Berserker ? 2f : 1f },
+        { BossAbility.LifeSteal,    archetype == BossArchetype.Vampire ? 2.5f : 1f },
+        { BossAbility.Regeneration, archetype == BossArchetype.Tank ? 2.2f : 1f }
+    };
+
+            // 🔹 Select unique abilities up to abilityCount
+            for (int i = 0; i < abilityCount; i++)
+            {
+                BossAbility chosen = WeightedPick(weightedAbilities);
+                if (!abilities.Contains(chosen))
+                {
+                    abilities.Add(chosen);
+
+                    // Each ability gets its own level (0–3)
+                    int level = Random.Range(0, 4);
+                    abilityLevels[chosen] = level;
+
+                    if (level > 0)
+                        ApplyAbility(chosen, level);
+                }
+            }
+
+            // Visual feedback
+            ApplyArchetypeVisuals();
+
+            // Debug readout
+            string abilityReport = "";
+            foreach (var kv in abilityLevels)
+                abilityReport += $"{kv.Key}(Lv.{kv.Value}) ";
+            Debug.Log($"[BossEnemy] Assigned Abilities: {abilityReport}");
+        }
+
+        private BossAbility WeightedPick(Dictionary<BossAbility, float> weights)
+        {
+            float total = 0f;
+            foreach (var w in weights) total += w.Value;
+            float pick = Random.Range(0f, total);
+            float sum = 0f;
+            foreach (var w in weights)
+            {
+                sum += w.Value;
+                if (pick <= sum) return w.Key;
+            }
+            return BossAbility.None;
+        }
+
+        private void ApplyAbility(BossAbility ability, int level)
+        {
+            if (level <= 0) return; // No effect if level 0 (still stored)
+
+            switch (ability)
             {
                 case BossAbility.FireResist:
+                    // TODO: implement fire resistance scaling later
                     break;
+
                 case BossAbility.PoisonResist:
+                    // TODO: implement poison resistance scaling later
                     break;
+
                 case BossAbility.SpeedBoost:
-                    moveSpeed *= 1.3f;
+                    moveSpeed *= 1f + (0.15f * level);
                     break;
+
                 case BossAbility.LifeSteal:
-                    OnDealDamage += LifeStealHandler;
+                    OnDealDamage += (int dmg) =>
+                    {
+                        if (health != null)
+                            health.Heal(Mathf.RoundToInt(dmg * (0.1f * level)));
+                    };
                     break;
+
                 case BossAbility.Regeneration:
-                    StartCoroutine(RegenerationRoutine());
+                    StartCoroutine(RegenerationRoutine(level));
                     break;
             }
         }
 
-        private void LifeStealHandler(int damage)
+        private IEnumerator RegenerationRoutine(int level)
         {
-            if (health != null)
-                health.Heal(Mathf.RoundToInt(damage * 0.2f));
-        }
+            int healPerTick = 4 * level;
+            float interval = Mathf.Max(0.5f, 2f - 0.3f * level);
 
-        private IEnumerator RegenerationRoutine()
-        {
             while (health != null && health.CurrentHealth > 0)
             {
-                health.Heal(5);
-                yield return new WaitForSeconds(2f);
+                health.Heal(healPerTick);
+                yield return new WaitForSeconds(interval);
             }
+        }
+
+        private void ApplyArchetypeVisuals()
+        {
+            var renderer = GetComponentInChildren<Renderer>();
+            if (renderer == null) return;
+
+            Color color = archetype switch
+            {
+                BossArchetype.Tank => Color.cyan,
+                BossArchetype.Berserker => Color.red,
+                BossArchetype.Vampire => new Color(0.5f, 0, 0.5f),
+                BossArchetype.Mutant => Color.green,
+                BossArchetype.Elemental => new Color(1f, 0.6f, 0.1f),
+                _ => Color.white
+            };
+
+            renderer.material.SetColor("_EmissionColor", color * 1.5f);
         }
 
         private void OnBossDeath()
         {
-            Debug.Log("[BossEnemy] Boss defeated!");
+            Debug.Log($"[BossEnemy] {archetype} Boss defeated!");
             Destroy(gameObject, 1.5f);
         }
 
         private void Update()
         {
-            if (bossPath == null || bossPath.Count == 0)
-            {
-                Debug.Log("[BossEnemy] Waiting for path... (no movement)");
-                return;
-            }
-
+            if (bossPath == null || bossPath.Count == 0) return;
             base.Update();
         }
     }

@@ -53,7 +53,6 @@ namespace CrystalDefenders.Combat
             // Play travel particles if assigned
             if (travelParticles != null)
             {
-                // Instantiate a runtime copy so we never modify the prefab asset
                 travelParticles = Instantiate(travelParticles, transform.position, transform.rotation, transform);
                 travelParticles.Clear(true);
                 travelParticles.Play(true);
@@ -78,32 +77,8 @@ namespace CrystalDefenders.Combat
             }
         }
 
-
-        //private IEnumerator AnimateShockwave(Material mat)
-        //{
-        //    float duration = 0.5f;
-        //    float t = 0f;
-        //    while (t < 1f)
-        //    {
-        //        mat.SetFloat("_Height", Mathf.Lerp(1f, 0f, t));
-        //        t += Time.deltaTime / duration;
-        //        yield return null;
-        //    }
-        //    mat.SetFloat("_Height", 0f);
-        //}
-
         protected override void OnImpact(Vector3 hitPosition, Transform hitTarget)
         {
-
-            //base.OnImpact(hitPosition, hitTarget);
-
-            //if (shockwaveMaterial != null)
-            //{
-            //    shockwaveMaterial.SetVector("_ImpactPosition", hitPosition);
-            //    StartCoroutine(AnimateShockwave(shockwaveMaterial));
-            //}
-
-
             // Stop travel particles
             if (travelParticles != null)
             {
@@ -130,54 +105,45 @@ namespace CrystalDefenders.Combat
 
             // Direct hit damage
             if (hitTarget != null)
-            {
-                var h = hitTarget.GetComponent<Health>();
-                if (h != null)
-                {
-                    int finalDamage = damage;
-
-                    // Check for boss fire resistance
-                    var boss = h.GetComponent<BossEnemy>();
-                    if (boss != null && boss.AssignedAbility == BossEnemy.BossAbility.FireResist)
-                        finalDamage = Mathf.RoundToInt(finalDamage * 0.5f); // 50% reduction
-
-                    if (!string.IsNullOrEmpty(damageTag))
-                        h.ApplyDamage(finalDamage, damageTag);
-                    else
-                        h.ApplyDamage(finalDamage);
-                }
-            }
+                ApplyFireDamage(hitTarget, damage);
 
             // Splash damage
             var colliders = Physics.OverlapSphere(hitPosition, explosionRadius);
-            for (int i = 0; i < colliders.Length; i++)
+            foreach (var col in colliders)
             {
-                var h = colliders[i].GetComponent<Health>();
-                if (h != null)
-                {
-                    int finalSplashDamage = splashDamage;
-
-                    // Check for boss fire resistance
-                    var boss = h.GetComponent<BossEnemy>();
-                    if (boss != null && boss.AssignedAbility == BossEnemy.BossAbility.FireResist)
-                        finalSplashDamage = Mathf.RoundToInt(finalSplashDamage * 0.5f);
-
-                    if (!string.IsNullOrEmpty(damageTag))
-                        h.ApplyDamage(finalSplashDamage, damageTag);
-                    else
-                        h.ApplyDamage(finalSplashDamage);
-                }
+                if (col.transform == hitTarget) continue;
+                ApplyFireDamage(col.transform, splashDamage);
             }
 
             // Shockwave on terrain
             var generators = FindObjectsOfType<ProceduralTerrainGenerator>();
             foreach (var gen in generators)
             {
-                float radius = explosionRadius;
-                float strength = 0.5f;
-                float duration = 0.9f;
-                gen.ApplyShockwave(hitPosition, radius, strength, duration, restore: true);
+                gen.ApplyShockwave(hitPosition, explosionRadius, 0.5f, 0.9f, restore: true);
             }
+        }
+
+        private void ApplyFireDamage(Transform target, int baseDamage)
+        {
+            var h = target.GetComponent<Health>();
+            if (h == null) return;
+
+            int finalDamage = baseDamage;
+
+            var boss = h.GetComponent<BossEnemy>();
+            if (boss != null)
+            {
+                // Check for fire resistance ability
+                if (boss.HasAbility(BossEnemy.BossAbility.FireResist))
+                {
+                    finalDamage = Mathf.RoundToInt(finalDamage * 0.5f); // reduce damage by 50%
+                }
+            }
+
+            if (!string.IsNullOrEmpty(damageTag))
+                h.ApplyDamage(finalDamage, damageTag);
+            else
+                h.ApplyDamage(finalDamage);
         }
     }
 }

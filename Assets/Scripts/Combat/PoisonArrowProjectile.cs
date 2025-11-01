@@ -1,4 +1,4 @@
-using CrystalDefenders.Combat;
+﻿using CrystalDefenders.Combat;
 using CrystalDefenders.Units;
 using System.Collections;
 using UnityEngine;
@@ -91,9 +91,9 @@ namespace CrystalDefenders.Combat
 
             int finalDamage = damage;
 
-            // Boss poison resistance
+            // ✅ Updated boss poison resistance check using new ability system
             var boss = health.GetComponent<BossEnemy>();
-            if (boss != null && boss.AssignedAbility == BossEnemy.BossAbility.PoisonResist)
+            if (boss != null && boss.HasAbility(BossEnemy.BossAbility.PoisonResist))
                 finalDamage = Mathf.RoundToInt(finalDamage * 0.5f);
 
             if (!string.IsNullOrEmpty(damageTag))
