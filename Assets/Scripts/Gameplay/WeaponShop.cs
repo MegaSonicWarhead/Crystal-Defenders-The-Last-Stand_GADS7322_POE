@@ -1,11 +1,12 @@
 ﻿using CrystalDefenders.Combat;
 using CrystalDefenders.Gameplay;
+using CrystalDefenders.Generation;
 using CrystalDefenders.Units;
-using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 public class WeaponShop : MonoBehaviour
 {
@@ -26,11 +27,18 @@ public class WeaponShop : MonoBehaviour
     public int poisonArcherCost = 150;
     public int fireMageCost = 200;
 
+    [Header("Placement Node Settings")]
+    public GameObject placementNodePrefab;
+    public int placementNodeCost = 50;
+    public int maxExtraNodes = 4;    // Max extra nodes player can buy
+    private int purchasedNodes = 0;  // Tracks how many extra nodes bought
+
     public static WeaponShop Instance { get; private set; }
     public bool HasDefenderToPlace { get; private set; } = false;
     public Defender SelectedDefenderPrefab { get; private set; }
 
     private SelectableTower selectedTower;
+    private DefenderPlacementManager placementManager;
 
     private void Awake()
     {
@@ -44,13 +52,18 @@ public class WeaponShop : MonoBehaviour
 
     private void Start()
     {
-        weaponTurretButton.onClick.AddListener(OnWeaponTurretButton);
-        if (poisonArcherButton != null) poisonArcherButton.onClick.AddListener(OnPoisonArcherButton);
-        if (fireMageButton != null) fireMageButton.onClick.AddListener(OnFireMageButton);
+        weaponTurretButton.onClick.AddListener(() => BuyDefender(defaultDefenderPrefab, Defender.Cost, "Defender"));
+        if (poisonArcherButton != null) poisonArcherButton.onClick.AddListener(() => BuyDefender(poisonArcherPrefab, poisonArcherCost, "Poison Archer"));
+        if (fireMageButton != null) fireMageButton.onClick.AddListener(() => BuyDefender(fireMagePrefab, fireMageCost, "Fire Mage"));
         repairButton.onClick.AddListener(OnRepairButton);
+        if (upgradeButton != null) upgradeButton.onClick.AddListener(OnUpgradeButton);
 
-        if (upgradeButton != null)
-            upgradeButton.onClick.AddListener(OnUpgradeButton);
+        placementManager = FindObjectOfType<DefenderPlacementManager>();
+
+        // Generate initial procedural nodes
+        var generator = FindObjectOfType<ProceduralTerrainGenerator>();
+        if (generator != null && placementManager != null)
+            placementManager.CreateNodesNearPaths(generator);
     }
 
     private void Update()
@@ -61,12 +74,40 @@ public class WeaponShop : MonoBehaviour
         if (HasDefenderToPlace && (Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(1)))
             CancelPlacement();
 
+        if (Input.GetMouseButtonDown(1) && selectedTower != null && !HasDefenderToPlace)
+            DeselectTower();
+
         UpdateButtonStates();
+    }
+
+    // --- Extra node purchase ---
+    public void BuyPlacementNode()
+    {
+        if (purchasedNodes >= maxExtraNodes)
+        {
+            Debug.Log("Max extra nodes purchased.");
+            return;
+        }
+
+        if (!ResourceManager.Instance.CanAfford(placementNodeCost))
+        {
+            Debug.Log("Not enough resources to buy a placement node.");
+            return;
+        }
+
+        if (ResourceManager.Instance.Spend(placementNodeCost))
+        {
+            purchasedNodes++;
+            Debug.Log($"Extra placement node purchased! Remaining: {maxExtraNodes - purchasedNodes}");
+
+            if (placementManager != null)
+                placementManager.StartPlacingExtraNode(placementNodePrefab);
+        }
     }
 
     private void UpdateButtonStates()
     {
-        bool hasFreeNode = HasAnyAvailablePlacementNode();
+        bool hasFreeNode = placementManager != null && placementManager.HasAvailableNode();
 
         weaponTurretButton.interactable =
             ResourceManager.Instance.CurrentResources >= Defender.Cost && !HasDefenderToPlace && hasFreeNode;
@@ -79,111 +120,44 @@ public class WeaponShop : MonoBehaviour
             fireMageButton.interactable =
                 ResourceManager.Instance.CurrentResources >= fireMageCost && !HasDefenderToPlace && hasFreeNode;
 
-        bool hasDamaged = Defender.Registry.Any(
-            d => d != null && d.GetComponent<Health>().CurrentHealth < d.GetComponent<Health>().MaxHealth
-        );
+        bool hasDamaged = Defender.Registry.Any(d => d != null && d.GetComponent<Health>().CurrentHealth < d.GetComponent<Health>().MaxHealth);
         repairButton.interactable = ResourceManager.Instance.CurrentResources >= Defender.RepairCost && hasDamaged;
 
-        // Enable upgrade only if something is selected and can upgrade
         if (upgradeButton != null)
         {
             if (selectedTower != null)
             {
                 var up = selectedTower.GetUpgradeable();
                 upgradeButton.interactable =
-                    up != null && up.CanUpgrade() && UpgradeManager.Instance.CanAfford(100); // base upgrade cost, handled per tower
+                    up != null && up.CanUpgrade() && UpgradeManager.Instance.CanAfford(100);
             }
-            else
-            {
-                upgradeButton.interactable = false;
-            }
+            else upgradeButton.interactable = false;
         }
     }
 
-    private bool HasAnyAvailablePlacementNode()
+    private void BuyDefender(Defender prefab, int cost, string name)
     {
-        var nodes = FindObjectsOfType<PlacementNode>(includeInactive: false);
-        for (int i = 0; i < nodes.Length; i++)
-            if (nodes[i] != null && nodes[i].IsAvailable)
-                return true;
-        return false;
-    }
-
-    private void OnWeaponTurretButton()
-    {
-        if (HasDefenderToPlace && SelectedDefenderPrefab == defaultDefenderPrefab)
+        if (HasDefenderToPlace && SelectedDefenderPrefab == prefab)
         {
             CancelPlacement();
             return;
         }
 
-        if (!HasAnyAvailablePlacementNode())
+        if (placementManager == null || !placementManager.HasAvailableNode())
         {
             Debug.Log("No available placement nodes.");
             return;
         }
 
-        if (ResourceManager.Instance.Spend(Defender.Cost))
+        if (ResourceManager.Instance.Spend(cost))
         {
-            SelectedDefenderPrefab = defaultDefenderPrefab;
+            SelectedDefenderPrefab = prefab;
             HasDefenderToPlace = true;
-            Debug.Log("Bought defender! Now click a placement node to place it.");
+            Debug.Log($"Bought {name}! Now click a placement node to place it.");
         }
         else
         {
-            Debug.Log("Not enough resources for a defender!");
-        }
-    }
-
-    private void OnPoisonArcherButton()
-    {
-        if (HasDefenderToPlace && SelectedDefenderPrefab == poisonArcherPrefab)
-        {
-            CancelPlacement();
-            return;
-        }
-
-        if (!HasAnyAvailablePlacementNode())
-        {
-            Debug.Log("No available placement nodes.");
-            return;
-        }
-
-        if (ResourceManager.Instance.Spend(poisonArcherCost))
-        {
-            SelectedDefenderPrefab = poisonArcherPrefab;
-            HasDefenderToPlace = true;
-            Debug.Log("Bought Poison Archer! Now click a placement node to place it.");
-        }
-        else
-        {
-            Debug.Log("Not enough resources for a Poison Archer!");
-        }
-    }
-
-    private void OnFireMageButton()
-    {
-        if (HasDefenderToPlace && SelectedDefenderPrefab == fireMagePrefab)
-        {
-            CancelPlacement();
-            return;
-        }
-
-        if (!HasAnyAvailablePlacementNode())
-        {
-            Debug.Log("No available placement nodes.");
-            return;
-        }
-
-        if (ResourceManager.Instance.Spend(fireMageCost))
-        {
-            SelectedDefenderPrefab = fireMagePrefab;
-            HasDefenderToPlace = true;
-            Debug.Log("Bought Fire Mage! Now click a placement node to place it.");
-        }
-        else
-        {
-            Debug.Log("Not enough resources for a Fire Mage!");
+            Debug.Log($"Not enough resources for a {name}!");
         }
     }
 
@@ -191,6 +165,7 @@ public class WeaponShop : MonoBehaviour
     {
         HasDefenderToPlace = false;
         SelectedDefenderPrefab = null;
+        placementManager?.OnNodePlaced();
     }
 
     private void CancelPlacement()
@@ -202,67 +177,41 @@ public class WeaponShop : MonoBehaviour
 
     private void OnRepairButton()
     {
-        var damaged = Defender.Registry
-            .Where(d => d != null && d.GetComponent<Health>().CurrentHealth < d.GetComponent<Health>().MaxHealth)
-            .ToList();
+        var damaged = Defender.Registry.Where(d => d != null && d.GetComponent<Health>().CurrentHealth < d.GetComponent<Health>().MaxHealth).ToList();
+        if (damaged.Count == 0) return;
 
-        if (damaged.Count == 0)
-        {
-            Debug.Log("No damaged defenders to repair.");
-            return;
-        }
-
-        if (!ResourceManager.Instance.Spend(Defender.RepairCost))
-        {
-            Debug.Log("Not enough resources to repair.");
-            return;
-        }
+        if (!ResourceManager.Instance.Spend(Defender.RepairCost)) return;
 
         var target = damaged[Random.Range(0, damaged.Count)];
-        var health = target.GetComponent<Health>();
-        health.RestoreFullHealth();
-        //Debug.Log($"Repaired {target.name} for {Defender.RepairCost} resources.");
+        target.GetComponent<Health>().RestoreFullHealth();
     }
 
     private void OnUpgradeButton()
     {
-        if (selectedTower == null)
-        {
-            //Debug.Log("No tower selected to upgrade.");
-            return;
-        }
+        if (selectedTower == null) return;
 
         var upgradeable = selectedTower.GetUpgradeable();
-        if (upgradeable == null)
-        {
-            //Debug.Log("Selected object cannot be upgraded.");
-            return;
-        }
+        if (upgradeable == null || !upgradeable.CanUpgrade()) return;
 
-        if (!upgradeable.CanUpgrade())
-        {
-           // Debug.Log("Selected tower is already max tier.");
-            return;
-        }
-
-        if (!UpgradeManager.Instance.CanAfford(100)) // Default cost handled inside handler if needed
-        {
-           // Debug.Log("Not enough resources to upgrade.");
-            return;
-        }
+        if (!UpgradeManager.Instance.CanAfford(100)) return;
 
         UpgradeManager.Instance.SpendResources(100);
         upgradeable.ApplyUpgrade();
-
-       // Debug.Log($"Upgraded {selectedTower.name} successfully!");
     }
 
     public void SelectTower(SelectableTower newSelection)
     {
-        if (selectedTower != null)
-            selectedTower.SetSelected(false);
-
+        if (selectedTower != null) selectedTower.SetSelected(false);
         selectedTower = newSelection;
         selectedTower.SetSelected(true);
+    }
+
+    public void DeselectTower()
+    {
+        if (selectedTower != null)
+        {
+            selectedTower.SetSelected(false);
+            selectedTower = null;
+        }
     }
 }

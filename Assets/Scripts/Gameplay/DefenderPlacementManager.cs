@@ -7,24 +7,28 @@ namespace CrystalDefenders.Gameplay
 {
     /// <summary>
     /// Manages procedural placement nodes for defenders in the game.
-    /// Can generate nodes near paths or anywhere on the terrain.
-    /// Handles instantiation, resetting, and spacing logic.
+    /// Supports procedural nodes and extra nodes bought by the player.
     /// </summary>
     public class DefenderPlacementManager : MonoBehaviour
     {
         [Header("Placement Node Settings")]
         public GameObject placementNodePrefab;   // Prefab for a placement node
-        public int desiredNodeCount = 16;        // Target number of nodes to generate
+        public int desiredNodeCount = 16;        // Target number of procedural nodes
 
-        private readonly List<PlacementNode> nodes = new List<PlacementNode>(); // Tracks all active nodes
+        private readonly List<PlacementNode> nodes = new List<PlacementNode>();
+
+        // Extra node placement
+        private bool isPlacingExtraNode = false;
+        private GameObject previewNode; // The hovering node
+        private GameObject extraNodePrefab;
+
 
         private void Start()
         {
-            // Attempt to locate the procedural terrain generator in the scene
+            // Generate initial procedural nodes
             var generator = FindObjectOfType<ProceduralTerrainGenerator>();
             if (generator != null)
             {
-                // Generate placement nodes near paths initially
                 CreateNodesNearPaths(generator, 3f, 2);
             }
             else
@@ -33,104 +37,141 @@ namespace CrystalDefenders.Gameplay
             }
         }
 
-        /// <summary>
-        /// Generates nodes anywhere on the terrain.
-        /// Resets existing nodes if already present.
-        /// </summary>
+        private void Update()
+        {
+            HandleExtraNodePlacement();
+        }
+
+        // --- Extra Node Placement ---
+        public void StartPlacingExtraNode(GameObject prefab)
+        {
+            if (prefab == null) return;
+
+            extraNodePrefab = prefab;
+            isPlacingExtraNode = true;
+
+            // Create preview node
+            if (previewNode != null) Destroy(previewNode);
+            previewNode = Instantiate(extraNodePrefab, Vector3.zero, Quaternion.identity, transform);
+
+            // Disable colliders so it doesn't interfere with raycasts or physics
+            foreach (var col in previewNode.GetComponentsInChildren<Collider>())
+                col.enabled = false;
+
+            // Optional: make semi-transparent to indicate "preview"
+            foreach (var r in previewNode.GetComponentsInChildren<Renderer>())
+            {
+                var mat = r.material;
+                mat.color = new Color(mat.color.r, mat.color.g, mat.color.b, 0.6f);
+            }
+
+            Debug.Log("Extra node placement active. Hover over terrain and left-click to place.");
+        }
+
+        private void HandleExtraNodePlacement()
+        {
+            if (!isPlacingExtraNode || previewNode == null) return;
+
+            // Raycast from mouse to terrain
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                // Snap preview node to terrain
+                previewNode.transform.position = hit.point;
+            }
+
+            // Left click: attempt to place node
+            if (Input.GetMouseButtonDown(0))
+            {
+                Vector3 placePos = previewNode.transform.position;
+
+                // Check min spacing against existing nodes
+                const float minSpacing = 2f;
+                if (nodes.Exists(n => Vector3.Distance(n.transform.position, placePos) < minSpacing))
+                {
+                    Debug.Log("Cannot place node too close to another node.");
+                    return;
+                }
+
+                // Instantiate real node
+                var go = Instantiate(extraNodePrefab, placePos, Quaternion.identity, transform);
+                var node = go.GetComponent<PlacementNode>() ?? go.AddComponent<PlacementNode>();
+                node.Initialize();
+                nodes.Add(node);
+
+                // Cleanup preview
+                Destroy(previewNode);
+                previewNode = null;
+                isPlacingExtraNode = false;
+                extraNodePrefab = null;
+
+                Debug.Log("Extra placement node placed!");
+            }
+
+            // Right click / Escape: cancel placement
+            if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Escape))
+            {
+                Destroy(previewNode);
+                previewNode = null;
+                isPlacingExtraNode = false;
+                extraNodePrefab = null;
+                Debug.Log("Extra placement cancelled.");
+            }
+        }
+
+        // --- Procedural Node Methods ---
         public void CreateNodes(ProceduralTerrainGenerator generator)
         {
-            if (nodes.Count == 0)
-            {
-                GenerateNodes(generator);
-            }
-            else
-            {
-                ResetNodes();
-            }
+            if (nodes.Count == 0) GenerateNodes(generator);
+            else ResetNodes();
         }
 
-        /// <summary>
-        /// Generates nodes preferentially near paths to encourage strategic defender placement.
-        /// Resets existing nodes if already present.
-        /// </summary>
-        /// <param name="distanceFromPath">Distance from path center to place nodes</param>
-        /// <param name="minNodesPerPath">Minimum nodes per path segment</param>
         public void CreateNodesNearPaths(ProceduralTerrainGenerator generator, float distanceFromPath = 3f, int minNodesPerPath = 2)
         {
-            if (nodes.Count == 0)
-            {
-                GenerateNodesNearPaths(generator, distanceFromPath, minNodesPerPath);
-            }
-            else
-            {
-                ResetNodes();
-            }
+            if (nodes.Count == 0) GenerateNodesNearPaths(generator, distanceFromPath, minNodesPerPath);
+            else ResetNodes();
         }
 
-        /// <summary>
-        /// Generates a set of placement nodes anywhere on the terrain.
-        /// Ensures enough nodes to meet the desired count.
-        /// </summary>
         private void GenerateNodes(ProceduralTerrainGenerator generator)
         {
-            ClearNodes(true); // Remove any existing nodes
+            ClearNodes(true);
+            InstantiateNodes(generator.GetCandidatePlacementNodes(desiredNodeCount * 3));
 
-            // Attempt to generate more candidate positions than needed for flexibility
-            var positions = generator.GetCandidatePlacementNodes(desiredNodeCount * 3);
-            InstantiateNodes(positions);
-
-            // Top-up if not enough nodes were successfully instantiated
             if (nodes.Count < desiredNodeCount)
-            {
-                var more = generator.GetCandidatePlacementNodes(desiredNodeCount * 2);
-                InstantiateNodes(more);
-            }
+                InstantiateNodes(generator.GetCandidatePlacementNodes(desiredNodeCount * 2));
         }
 
-        /// <summary>
-        /// Generates placement nodes preferentially near paths with additional nodes for general areas.
-        /// </summary>
         private void GenerateNodesNearPaths(ProceduralTerrainGenerator generator, float distanceFromPath, int minNodesPerPath)
         {
-            ClearNodes(true); // Remove existing nodes
-
-            var positions = generator.GetCandidateNodesNearPaths(distanceFromPath, minNodesPerPath);
-            InstantiateNodes(positions);
-
-            // Top-up with general positions to fill open spaces
-            var extras = generator.GetCandidatePlacementNodes(desiredNodeCount * 3);
-            InstantiateNodes(extras);
+            ClearNodes(true);
+            InstantiateNodes(generator.GetCandidateNodesNearPaths(distanceFromPath, minNodesPerPath));
+            InstantiateNodes(generator.GetCandidatePlacementNodes(desiredNodeCount * 3));
         }
 
-        /// <summary>
-        /// Instantiates placement nodes at given positions.
-        /// Ensures minimum spacing and snaps nodes to terrain height.
-        /// </summary>
-        private void InstantiateNodes(List<Vector3> positions)
+        // --- Node Instantiation ---
+        public void InstantiateNodes(List<Vector3> positions)
         {
-            const float minSpacing = 2.0f; // Minimum distance between nodes
+            const float minSpacing = 2.0f;
 
-            for (int i = 0; i < positions.Count; i++)
+            foreach (var originalPos in positions)
             {
-                Vector3 pos = positions[i];
+                Vector3 pos = originalPos;
                 bool tooClose = false;
 
-                // Check spacing against existing nodes
-                for (int j = 0; j < nodes.Count; j++)
+                foreach (var n in nodes)
                 {
-                    if (nodes[j] == null) continue;
-                    if (Vector3.Distance(nodes[j].transform.position, pos) < minSpacing) { tooClose = true; break; }
+                    if (n == null) continue;
+                    if (Vector3.Distance(n.transform.position, pos) < minSpacing)
+                    {
+                        tooClose = true;
+                        break;
+                    }
                 }
                 if (tooClose) continue;
 
-                // Snap node to terrain using raycast
                 Vector3 spawn = pos + Vector3.up * 5f;
-                if (Physics.Raycast(spawn, Vector3.down, out RaycastHit hit, 50f))
-                {
-                    pos = hit.point;
-                }
+                if (Physics.Raycast(spawn, Vector3.down, out RaycastHit hit, 50f)) pos = hit.point;
 
-                // Instantiate node prefab and initialize
                 var go = Instantiate(placementNodePrefab, pos, Quaternion.identity, transform);
                 var node = go.GetComponent<PlacementNode>();
                 if (node == null) node = go.AddComponent<PlacementNode>();
@@ -139,33 +180,16 @@ namespace CrystalDefenders.Gameplay
             }
         }
 
-        /// <summary>
-        /// Resets all existing nodes for reuse without destroying them.
-        /// </summary>
         private void ResetNodes()
         {
-            foreach (var node in nodes)
-            {
-                if (node != null)
-                {
-                    node.Initialize();
-                }
-            }
+            foreach (var node in nodes) node?.Initialize();
         }
 
-        /// <summary>
-        /// Clears existing nodes from the scene.
-        /// Can either destroy GameObjects or reset them for reuse.
-        /// </summary>
-        /// <param name="destroy">If true, destroys node GameObjects; otherwise resets them</param>
         private void ClearNodes(bool destroy = false)
         {
             if (destroy)
             {
-                foreach (var n in nodes)
-                {
-                    if (n != null) Destroy(n.gameObject);
-                }
+                foreach (var n in nodes) if (n != null) Destroy(n.gameObject);
                 nodes.Clear();
             }
             else
@@ -179,6 +203,18 @@ namespace CrystalDefenders.Gameplay
                     }
                 }
             }
+        }
+
+        // --- Utility ---
+        public bool HasAvailableNode()
+        {
+            return nodes.Exists(n => n != null && n.IsAvailable);
+        }
+
+        public void OnNodePlaced()
+        {
+            // Called when a defender is placed on a node
+            // Optional: remove node from available list or mark it as used
         }
     }
 }

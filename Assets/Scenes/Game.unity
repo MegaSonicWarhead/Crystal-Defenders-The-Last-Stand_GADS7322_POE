@@ -430,6 +430,9 @@ MonoBehaviour:
   fireMagePrefab: {fileID: 3660406141051845494, guid: 8bf7e8341a2c69c42a9fc0f3981efd61, type: 3}
   poisonArcherCost: 150
   fireMageCost: 200
+  placementNodePrefab: {fileID: 6326495757445937941, guid: 5758acf4dd1028f41ace71d991081e0f, type: 3}
+  placementNodeCost: 50
+  maxExtraNodes: 4
 --- !u!1 &232835918
 GameObject:
   m_ObjectHideFlags: 0
@@ -1958,7 +1961,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Placement Node Cost 100
+  m_text: Placement Node Cost 50
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2963,7 +2966,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1126842866
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3027,7 +3030,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1126842868}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 164132451}
+        m_TargetAssemblyTypeName: WeaponShop, Assembly-CSharp
+        m_MethodName: BuyPlacementNode
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1126842868
 MonoBehaviour:
   m_ObjectHideFlags: 0

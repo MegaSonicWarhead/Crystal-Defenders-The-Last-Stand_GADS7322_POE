@@ -26,8 +26,10 @@ public class SelectableTower : MonoBehaviour
 
     private void OnMouseDown()
     {
-        // Deselect any previously selected tower
-        WeaponShop.Instance.SelectTower(this);
+        if (Input.GetMouseButton(0)) // Left-click
+        {
+            WeaponShop.Instance.SelectTower(this);
+        }
     }
 
     public void SetSelected(bool selected)
