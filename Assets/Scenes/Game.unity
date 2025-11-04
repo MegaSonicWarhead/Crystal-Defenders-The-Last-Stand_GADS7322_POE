@@ -1673,6 +1673,7 @@ GameObject:
   - component: {fileID: 814562103}
   - component: {fileID: 814562102}
   - component: {fileID: 814562105}
+  - component: {fileID: 814562106}
   m_Layer: 0
   m_Name: ProceduralTerrain
   m_TagString: Untagged
@@ -1783,6 +1784,28 @@ MonoBehaviour:
   flatteningStrength: 0
   flatteningIterations: 0
   runtimeMeshCollider: {fileID: 0}
+--- !u!64 &814562106
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 814562100}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 0}
 --- !u!1 &877289022
 GameObject:
   m_ObjectHideFlags: 0
