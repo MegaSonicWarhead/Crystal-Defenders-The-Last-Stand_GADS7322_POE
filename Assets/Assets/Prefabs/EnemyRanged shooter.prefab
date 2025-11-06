@@ -123,7 +123,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 100
-  requiredDamageTag: fire
+  requiredDamageTags:
+  - fire
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -150,6 +151,7 @@ MonoBehaviour:
   attackRange: 5
   attackCooldown: 1
   lastAttackTime: -999
+  health: {fileID: 0}
   projectilePrefab: {fileID: 7679587348817631104, guid: de28d050e0a1ef0409b234723cada247, type: 3}
   projectileSpeed: 10
   projectileDamage: 8

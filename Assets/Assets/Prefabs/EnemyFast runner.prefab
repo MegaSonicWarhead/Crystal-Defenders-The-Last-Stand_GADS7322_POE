@@ -81,7 +81,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 100
-  requiredDamageTag: poison
+  requiredDamageTags:
+  - poison
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -108,3 +109,4 @@ MonoBehaviour:
   attackRange: 4
   attackCooldown: 0.8
   lastAttackTime: -999
+  health: {fileID: 0}

@@ -1,5 +1,6 @@
-﻿using UnityEngine;
-using CrystalDefenders.Units;
+﻿using CrystalDefenders.Units;
+using System.Linq;
+using UnityEngine;
 
 namespace CrystalDefenders.Combat
 {
@@ -111,20 +112,24 @@ namespace CrystalDefenders.Combat
             var enemyHealth = enemy.GetComponent<Health>();
             if (enemyHealth == null) return true; // No health component? Assume damage is allowed
 
-            string enemyRequiredTag = enemyHealth.requiredDamageTag;
+            var allowedTags = enemyHealth.RequiredDamageTags;
 
-            // Default projectile logic (no tag)
+            // If enemy allows all damage (empty list), tower can attack
+            if (allowedTags == null || allowedTags.Count == 0)
+                return true;
+
+            // Default projectile (no tag) hits only if enemy allows "Default"
             if (string.IsNullOrEmpty(towerDamageTag))
+                return allowedTags.Contains("Default");
+
+            // Tower has a tag, check if any enemy tag matches
+            foreach (var tag in allowedTags)
             {
-                return string.IsNullOrEmpty(enemyRequiredTag); // Only hit enemies without tags
+                if (string.Equals(tag, towerDamageTag, System.StringComparison.OrdinalIgnoreCase))
+                    return true;
             }
 
-            // Special projectiles (fire / poison)
-            if (string.IsNullOrEmpty(enemyRequiredTag))
-                return false; // Don't hit enemies without tags
-
-            // Hit only if tags match
-            return enemyRequiredTag == towerDamageTag;
+            return false; // No matching tags
         }
     }
 }

@@ -1,4 +1,4 @@
-Shader "CrystalDefenders/PoisonArrowShader"
+﻿Shader "CrystalDefenders/PoisonArrowShader"
 {
     Properties
     {
@@ -8,12 +8,13 @@ Shader "CrystalDefenders/PoisonArrowShader"
         _GlowIntensity ("Glow Intensity", Range(0,5)) = 1.5
         _CloudSpeed ("Cloud Speed", Range(0,5)) = 1.0
         _CloudScale ("Cloud Scale", Range(0.1,10)) = 3.0
+        _EmissionIntensity ("Emission Intensity", Range(0,10)) = 3.0
     }
 
     SubShader
     {
         Tags { "RenderType"="Opaque" "Queue"="Geometry" }
-        LOD 200
+        LOD 250
 
         Pass
         {
@@ -45,6 +46,7 @@ Shader "CrystalDefenders/PoisonArrowShader"
             float _GlowIntensity;
             float _CloudSpeed;
             float _CloudScale;
+            float _EmissionIntensity;
 
             // Simple pseudo-random function for cloud noise
             float rand(float2 co)
@@ -78,7 +80,7 @@ Shader "CrystalDefenders/PoisonArrowShader"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                // Simple lambert lighting factor
+                // Simple Lambert lighting factor
                 float3 N = normalize(i.worldNormal);
                 float3 L = normalize(_WorldSpaceLightPos0.xyz);
                 float NdotL = saturate(dot(N, L));
@@ -95,15 +97,18 @@ Shader "CrystalDefenders/PoisonArrowShader"
 
                 // CLOUD EFFECT
                 float2 cloudUV = i.uv * _CloudScale;
-                cloudUV += _Time.y * _CloudSpeed; // use built-in _Time
+                cloudUV += _Time.y * _CloudSpeed;
                 float cloud = noise(cloudUV);
 
                 // Mix cloud as extra intensity for poison color
                 float cloudIntensity = cloud * _PoisonStrength;
                 fixed3 cloudColor = baseColor.rgb * cloudIntensity;
 
-                // Final color with emission and cloud added
-                fixed3 finalColor = diffuse + glow + cloudColor;
+                // 💥 BLOOM-ENABLED EMISSION
+                fixed3 emission = _PoisonColor.rgb * (glowFactor + cloudIntensity) * _EmissionIntensity;
+
+                // Final color with emission and lighting
+                fixed3 finalColor = diffuse + glow + cloudColor + emission;
 
                 return fixed4(finalColor, baseColor.a);
             }

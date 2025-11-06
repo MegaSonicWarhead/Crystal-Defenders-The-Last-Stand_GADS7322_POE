@@ -39,12 +39,16 @@ namespace CrystalDefenders.Units
 
         private void Awake()
         {
-            // use inherited field
             if (health == null)
                 health = GetComponent<Health>();
 
             if (health != null)
+            {
+                // Boss accepts fire, poison, AND default/no-tag damage
+                health.SetRequiredTags("fire", "poison", "Default"); // "" = no tag, so default tower can shoot
+
                 health.onDeath.AddListener(OnBossDeath);
+            }
         }
 
         private void Start()

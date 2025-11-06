@@ -47,7 +47,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 100
-  requiredDamageTag: 
+  requiredDamageTags:
+  - Default
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -74,6 +75,7 @@ MonoBehaviour:
   attackRange: 5
   attackCooldown: 1
   lastAttackTime: -999
+  health: {fileID: 0}
 --- !u!1001 &133480579275785386
 PrefabInstance:
   m_ObjectHideFlags: 0
