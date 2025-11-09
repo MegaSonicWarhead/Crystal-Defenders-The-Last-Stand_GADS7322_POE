@@ -109,6 +109,7 @@ public class WeaponShop : MonoBehaviour
     {
         bool hasFreeNode = placementManager != null && placementManager.HasAvailableNode();
 
+        // --- Defender buttons ---
         weaponTurretButton.interactable =
             ResourceManager.Instance.CurrentResources >= Defender.Cost && !HasDefenderToPlace && hasFreeNode;
 
@@ -120,18 +121,39 @@ public class WeaponShop : MonoBehaviour
             fireMageButton.interactable =
                 ResourceManager.Instance.CurrentResources >= fireMageCost && !HasDefenderToPlace && hasFreeNode;
 
-        bool hasDamaged = Defender.Registry.Any(d => d != null && d.GetComponent<Health>().CurrentHealth < d.GetComponent<Health>().MaxHealth);
+        // --- Repair button ---
+        bool hasDamaged = Defender.Registry.Any(d =>
+            d != null && d.GetComponent<Health>().CurrentHealth < d.GetComponent<Health>().MaxHealth);
         repairButton.interactable = ResourceManager.Instance.CurrentResources >= Defender.RepairCost && hasDamaged;
 
+        // --- Upgrade button + tower glow ---
         if (upgradeButton != null)
         {
             if (selectedTower != null)
             {
                 var up = selectedTower.GetUpgradeable();
-                upgradeButton.interactable =
-                    up != null && up.CanUpgrade() && UpgradeManager.Instance.CanAfford(100);
+                bool canUpgrade = up != null && up.CanUpgrade() && UpgradeManager.Instance.CanAfford(100);
+                upgradeButton.interactable = canUpgrade;
+
+                // 🔥 Activate tower glow if upgradeable
+                var renderer = selectedTower.GetComponentInChildren<Renderer>();
+                if (renderer != null)
+                {
+                    foreach (var mat in renderer.materials)
+                    {
+                        if (mat.shader != null && mat.shader.name == "CrystalDefenders/TowerUpgradeGlow_Animated")
+                        {
+                            // Adjust glow intensity and pulse speed based on upgrade state
+                            mat.SetFloat("_GlowStrength", canUpgrade ? 3f : 0f);
+                            mat.SetFloat("_PulseSpeed", canUpgrade ? 3f : 1.5f);
+                        }
+                    }
+                }
             }
-            else upgradeButton.interactable = false;
+            else
+            {
+                upgradeButton.interactable = false;
+            }
         }
     }
 

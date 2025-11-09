@@ -1,4 +1,4 @@
-Shader "CrystalDefenders/TowerUpgradeGlow_Animated"
+﻿Shader "CrystalDefenders/TowerUpgradeGlow_Animated"
 {
     Properties
     {
@@ -34,7 +34,9 @@ Shader "CrystalDefenders/TowerUpgradeGlow_Animated"
             fixed4 tex = tex2D(_MainTex, IN.uv_MainTex) * _BaseColor;
             float pulse = 0.5 + 0.5 * sin(_Time.y * _PulseSpeed);
             fixed3 glow = _GlowColor.rgb * (_GlowStrength * pulse);
-            o.Albedo = tex.rgb + glow;
+
+            o.Albedo = tex.rgb;
+            o.Emission = glow;   // 🔥 Emission enables bloom glow
             o.Alpha = tex.a;
         }
         ENDCG
