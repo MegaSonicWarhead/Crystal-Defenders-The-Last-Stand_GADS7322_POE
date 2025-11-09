@@ -52,13 +52,26 @@ public class UIManager : MonoBehaviour
             return;
         }
 
+        //bar.minValue = 0;
+        //bar.maxValue = health.MaxHealth;
+        //bar.value = health.CurrentHealth;
+
         bar.minValue = 0;
-        bar.maxValue = health.MaxHealth;
-        bar.value = health.CurrentHealth;
+        bar.maxValue = Mathf.Max(1, health.MaxHealth);
+        bar.value = Mathf.Clamp(health.CurrentHealth, 0, health.MaxHealth);
 
         // Update slider on health changes
         health.onDamaged.AddListener(_ => UpdateBarValue(health));
         health.onHealed.AddListener(_ => UpdateBarValue(health));
+
+        health.onMaxHealthChanged.AddListener(newMax =>
+        {
+            if (healthBars.TryGetValue(health, out Slider bar) && bar != null)
+            {
+                bar.maxValue = newMax;
+                bar.value = health.CurrentHealth;
+            }
+        });
 
         // Remove bar when enemy dies
         health.onDeath.AddListener(() =>

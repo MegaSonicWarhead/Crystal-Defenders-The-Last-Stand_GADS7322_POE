@@ -54,6 +54,7 @@ namespace CrystalDefenders.Combat
         public UnityEvent onDeath;
         public UnityEvent<int> onDamaged;
         public UnityEvent<int> onHealed;
+        public UnityEvent<int> onMaxHealthChanged;
 
         private void Awake()
         {
@@ -62,8 +63,17 @@ namespace CrystalDefenders.Combat
 
         public void SetMaxHealth(int value, bool fill = true)
         {
+            int oldMax = maxHealth;
             maxHealth = Mathf.Max(1, value);
-            if (fill) CurrentHealth = maxHealth;
+
+            if (fill)
+                CurrentHealth = maxHealth;
+            else if (CurrentHealth > maxHealth)
+                CurrentHealth = maxHealth;
+
+            // 🔹 Fire event if max health changed
+            if (oldMax != maxHealth)
+                onMaxHealthChanged?.Invoke(maxHealth);
         }
 
         public void ApplyDamage(int amount)

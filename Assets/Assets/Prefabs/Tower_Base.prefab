@@ -83,8 +83,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 76d11f1e40ab63b42a2c0eff0d69b4ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 2000
-  requiredDamageTag: 
+  maxHealth: 4000
+  requiredDamageTags: []
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -107,6 +107,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   healthText: {fileID: 0}
+  warningThreshold: 0.5
+  vignetteFadeSpeed: 4
 --- !u!114 &-6575941860209541164
 MonoBehaviour:
   m_ObjectHideFlags: 0

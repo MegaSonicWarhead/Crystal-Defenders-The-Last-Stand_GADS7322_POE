@@ -30,7 +30,7 @@ namespace CrystalDefenders.Units
         {
             // Initialize and configure health component
             health = GetComponent<Health>();
-            health.SetMaxHealth(2000, true);
+            health.SetMaxHealth(4000, true);
             health.onDeath.AddListener(OnTowerDestroyed);
 
             // Subscribe to health events

@@ -113,7 +113,10 @@ namespace CrystalDefenders.Combat
 
             var enemyFast = targetHealth.GetComponent<EnemyFast>();
             if (enemyFast != null)
+            {
                 enemyFast.ApplyPoisonVisual(poisonDuration);
+                enemyFast.ApplyPoisonSlow(poisonDuration);
+            }
 
             float elapsed = 0f;
             while (elapsed < poisonDuration && targetHealth != null && targetHealth.CurrentHealth > 0)

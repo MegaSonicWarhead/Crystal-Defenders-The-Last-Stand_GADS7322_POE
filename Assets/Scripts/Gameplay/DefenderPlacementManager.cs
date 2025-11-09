@@ -216,5 +216,10 @@ namespace CrystalDefenders.Gameplay
             // Called when a defender is placed on a node
             // Optional: remove node from available list or mark it as used
         }
+
+        public int GetCurrentNodeCount()
+        {
+            return nodes.Count;
+        }
     }
 }

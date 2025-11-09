@@ -14,7 +14,7 @@ namespace CrystalDefenders.Units
     {
         [Header("Stats")]
         [Tooltip("Movement speed of the enemy along the path.")]
-        public float moveSpeed = 3f;
+        public float moveSpeed = 1.5f;
 
         [Tooltip("Damage dealt when attacking a defender or the main tower.")]
         public int contactDamage = 10;
@@ -182,7 +182,15 @@ namespace CrystalDefenders.Units
             isDead = true;
 
             // Reward player resources for kill
-            ResourceManager.Instance?.AddResources(25);
+            //int baseReward = 25;
+            //int waveBonus = Mathf.FloorToInt(WaveManager.Instance != null ? WaveManager.Instance.CurrentWave * 0.3f : 0);
+            //ResourceManager.Instance?.AddResources(baseReward + waveBonus);
+
+            int baseReward = 25;
+            int waveBonus = Mathf.FloorToInt(WaveManager.Instance != null ? WaveManager.Instance.CurrentWave * 0.3f : 0);
+            float multiplier = WaveManager.Instance != null ? WaveManager.Instance.ResourceGainMultiplier : 1f;
+            int reward = Mathf.RoundToInt((baseReward + waveBonus) * multiplier);
+            ResourceManager.Instance?.AddResources(reward);
 
             // Inform wave system of enemy death
             WaveManager.Instance?.OnEnemyDied();

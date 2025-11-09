@@ -15,6 +15,9 @@ namespace CrystalDefenders.Units
         private Renderer rend;
         private Color originalColor;
 
+        private bool isSlowed = false;
+        private float originalSpeed;
+
         private void Awake()
         {
             // Set health tag so only poison damages this enemy
@@ -58,10 +61,26 @@ namespace CrystalDefenders.Units
         /// </summary>
         private void Reset()
         {
-            moveSpeed = 5.5f;
+            moveSpeed = 3f;
             contactDamage = 6;
             attackRange = 4f;
             attackCooldown = 0.8f;
+        }
+
+        public void ApplyPoisonSlow(float duration)
+        {
+            if (!isSlowed)
+                StartCoroutine(SlowCoroutine(duration));
+        }
+
+        private IEnumerator SlowCoroutine(float duration)
+        {
+            isSlowed = true;
+            originalSpeed = moveSpeed;
+            moveSpeed *= 0.5f; // halve speed
+            yield return new WaitForSeconds(duration);
+            moveSpeed = originalSpeed;
+            isSlowed = false;
         }
     }
 }

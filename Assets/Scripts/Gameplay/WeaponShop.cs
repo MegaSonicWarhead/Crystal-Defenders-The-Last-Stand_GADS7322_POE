@@ -30,8 +30,12 @@ public class WeaponShop : MonoBehaviour
     [Header("Placement Node Settings")]
     public GameObject placementNodePrefab;
     public int placementNodeCost = 50;
-    public int maxExtraNodes = 4;    // Max extra nodes player can buy
-    private int purchasedNodes = 0;  // Tracks how many extra nodes bought
+    //public int maxExtraNodes = 4;    // Max extra nodes player can buy
+    //private int purchasedNodes = 0;  // Tracks how many extra nodes bought
+
+    [Header("Node Limits")]
+    public int maxTotalNodes = 20;   // Maximum allowed total nodes (initial + purchased)
+
 
     public static WeaponShop Instance { get; private set; }
     public bool HasDefenderToPlace { get; private set; } = false;
@@ -80,12 +84,19 @@ public class WeaponShop : MonoBehaviour
         UpdateButtonStates();
     }
 
-    // --- Extra node purchase ---
     public void BuyPlacementNode()
     {
-        if (purchasedNodes >= maxExtraNodes)
+        if (placementManager == null)
         {
-            Debug.Log("Max extra nodes purchased.");
+            Debug.LogWarning("No placement manager found!");
+            return;
+        }
+
+        int currentNodeCount = placementManager.GetCurrentNodeCount();
+
+        if (currentNodeCount >= maxTotalNodes)
+        {
+            Debug.Log($"Maximum total nodes reached ({maxTotalNodes}). Cannot place more.");
             return;
         }
 
@@ -97,13 +108,38 @@ public class WeaponShop : MonoBehaviour
 
         if (ResourceManager.Instance.Spend(placementNodeCost))
         {
-            purchasedNodes++;
-            Debug.Log($"Extra placement node purchased! Remaining: {maxExtraNodes - purchasedNodes}");
+            Debug.Log($"Extra placement node purchased! ({currentNodeCount + 1}/{maxTotalNodes} total)");
 
             if (placementManager != null)
                 placementManager.StartPlacingExtraNode(placementNodePrefab);
         }
     }
+
+
+    // --- Extra node purchase ---
+    //public void BuyPlacementNode()
+    //{
+    //    if (purchasedNodes >= maxExtraNodes)
+    //    {
+    //        Debug.Log("Max extra nodes purchased.");
+    //        return;
+    //    }
+
+    //    if (!ResourceManager.Instance.CanAfford(placementNodeCost))
+    //    {
+    //        Debug.Log("Not enough resources to buy a placement node.");
+    //        return;
+    //    }
+
+    //    if (ResourceManager.Instance.Spend(placementNodeCost))
+    //    {
+    //        purchasedNodes++;
+    //        Debug.Log($"Extra placement node purchased! Remaining: {maxExtraNodes - purchasedNodes}");
+
+    //        if (placementManager != null)
+    //            placementManager.StartPlacingExtraNode(placementNodePrefab);
+    //    }
+    //}
 
     private void UpdateButtonStates()
     {

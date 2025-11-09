@@ -3,6 +3,7 @@ using CrystalDefenders.Generation;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using CrystalDefenders.Gameplay;
 
 namespace CrystalDefenders.Units
 {
@@ -81,8 +82,8 @@ namespace CrystalDefenders.Units
         {
             if (health == null) health = GetComponent<Health>();
 
-            int scaledHealth = Mathf.RoundToInt(baseHealth * (1f + wave * healthScalePerWave) * Mathf.Pow(difficultyMultiplier, 1.25f));
-            int scaledDamage = Mathf.RoundToInt(baseDamage * (1f + wave * damageScalePerWave) * difficultyMultiplier);
+            int scaledHealth = Mathf.RoundToInt(baseHealth * (1f + wave * healthScalePerWave) * Mathf.Pow(difficultyMultiplier, 1.0f));
+            int scaledDamage = Mathf.RoundToInt(baseDamage * (1f + wave * damageScalePerWave) * difficultyMultiplier * Mathf.Pow(difficultyMultiplier, 0.9f));
             float scaledSpeed = Mathf.Clamp(baseMoveSpeed * (1f + wave * speedScalePerWave), 0.6f, 2.0f);
 
             scaledHealth = Mathf.RoundToInt(scaledHealth * Random.Range(1f - healthVariance, 1f + healthVariance));
@@ -245,6 +246,13 @@ namespace CrystalDefenders.Units
         private void OnBossDeath()
         {
             Debug.Log($"[BossEnemy] {archetype} Boss defeated!");
+
+            if (WaveManager.Instance != null)
+            {
+                WaveManager.Instance.IncreaseResourceMultiplier(1.25f);
+                Debug.Log($"[BossEnemy] 💰 Resource gain multiplier increased to x{WaveManager.Instance.ResourceGainMultiplier:F2}");
+            }
+
             Destroy(gameObject, 1.5f);
         }
 
