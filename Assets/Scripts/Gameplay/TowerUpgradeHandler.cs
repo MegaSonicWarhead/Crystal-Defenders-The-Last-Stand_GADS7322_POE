@@ -1,4 +1,4 @@
-using CrystalDefenders.Combat;
+﻿using CrystalDefenders.Combat;
 using CrystalDefenders.Units;
 using UnityEngine;
 using TMPro;
@@ -10,8 +10,8 @@ public class TowerUpgradeHandler : MonoBehaviour, IUpgradeable
 {
     [Header("Upgrade Settings")]
     public int maxUpgradeTier = 3;
-    public float healthMultiplierPerTier = 1.25f;
-    public float damageMultiplierPerTier = 1.2f;
+    public float healthMultiplierPerTier = 1.35f;
+    public float damageMultiplierPerTier = 1.5f;
 
     [Header("Visual Feedback")]
     public Color[] upgradeColors = { Color.clear, Color.green, Color.blue, Color.yellow };
@@ -88,7 +88,15 @@ public class TowerUpgradeHandler : MonoBehaviour, IUpgradeable
         health.SetMaxHealth(newMaxHealth, true);
 
         if (autoAttack != null)
+        {
             autoAttack.damagePerHit = Mathf.RoundToInt(autoAttack.damagePerHit * damageMultiplierPerTier);
+
+            //  Increase fire rate (shotsPerSecond) by 15 % per tier
+            autoAttack.shotsPerSecond *= 1.15f;
+
+            //  Slight range bump for higher tiers
+            autoAttack.range *= 1.05f;
+        }
 
         // Apply visuals
         UpdateVisuals();

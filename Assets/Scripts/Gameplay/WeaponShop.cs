@@ -171,7 +171,7 @@ public class WeaponShop : MonoBehaviour
                 bool canUpgrade = up != null && up.CanUpgrade() && UpgradeManager.Instance.CanAfford(100);
                 upgradeButton.interactable = canUpgrade;
 
-                // 🔥 Activate tower glow if upgradeable
+                // Activate tower glow if upgradeable
                 var renderer = selectedTower.GetComponentInChildren<Renderer>();
                 if (renderer != null)
                 {

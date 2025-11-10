@@ -104,7 +104,7 @@
                 float cloudIntensity = cloud * _PoisonStrength;
                 fixed3 cloudColor = baseColor.rgb * cloudIntensity;
 
-                // 💥 BLOOM-ENABLED EMISSION
+                // BLOOM-ENABLED EMISSION
                 fixed3 emission = _PoisonColor.rgb * (glowFactor + cloudIntensity) * _EmissionIntensity;
 
                 // Final color with emission and lighting

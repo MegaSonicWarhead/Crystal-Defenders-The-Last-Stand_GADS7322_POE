@@ -36,7 +36,7 @@
             fixed3 glow = _GlowColor.rgb * (_GlowStrength * pulse);
 
             o.Albedo = tex.rgb;
-            o.Emission = glow;   // 🔥 Emission enables bloom glow
+            o.Emission = glow;   // Emission enables bloom glow
             o.Alpha = tex.a;
         }
         ENDCG

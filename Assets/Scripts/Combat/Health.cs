@@ -71,7 +71,7 @@ namespace CrystalDefenders.Combat
             else if (CurrentHealth > maxHealth)
                 CurrentHealth = maxHealth;
 
-            // 🔹 Fire event if max health changed
+            // Fire event if max health changed
             if (oldMax != maxHealth)
                 onMaxHealthChanged?.Invoke(maxHealth);
         }
@@ -86,14 +86,14 @@ namespace CrystalDefenders.Combat
         {
             if (amount <= 0 || CurrentHealth <= 0) return;
 
-            // ✅ If no tags specified, allow all damage
+            // If no tags specified, allow all damage
             if (requiredDamageTags == null || requiredDamageTags.Count == 0)
             {
                 CurrentHealth -= amount;
                 return;
             }
 
-            // ✅ If damage has a tag, check for a match
+            // If damage has a tag, check for a match
             if (!string.IsNullOrEmpty(damageTag))
             {
                 foreach (var tag in requiredDamageTags)
@@ -107,7 +107,7 @@ namespace CrystalDefenders.Combat
             }
             else
             {
-                // ✅ Damage without a tag hits if "Default" is allowed
+                // Damage without a tag hits if "Default" is allowed
                 if (requiredDamageTags.Contains("Default"))
                 {
                     CurrentHealth -= amount;

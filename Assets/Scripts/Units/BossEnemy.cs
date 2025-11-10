@@ -32,7 +32,7 @@ namespace CrystalDefenders.Units
         private readonly Dictionary<BossAbility, int> abilityLevels = new();
 
         private List<Vector3> bossPath;
-        // 🔹 No serialized 'health' field here — inherited from Enemy.
+        // No serialized 'health' field here — inherited from Enemy.
         public System.Action<int> OnDealDamage;
 
         public enum BossAbility { None, FireResist, PoisonResist, SpeedBoost, LifeSteal, Regeneration }
@@ -125,7 +125,7 @@ namespace CrystalDefenders.Units
 
         private void AssignProceduralAbilities()
         {
-            // 🔹 Randomly decide how many abilities this boss will have (1–5)
+            // Randomly decide how many abilities this boss will have (1–5)
             int abilityCount = Random.Range(1, 6);
             abilities.Clear();
             abilityLevels.Clear();
